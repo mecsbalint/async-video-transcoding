@@ -31,7 +31,7 @@ def init_endpoints(app: Flask):
 
         if file and is_allowed_file(file.filename):
             # TODO: call Celery worker with file
-            response_dto = JobDto(id=12, state=JobState.QUEUED)
+            response_dto = JobDto(id=0, state=JobState.QUEUED)
             return jsonify(response_dto.model_dump()), 201
 
         # TODO: implement error handling

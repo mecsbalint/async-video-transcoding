@@ -14,17 +14,17 @@ class JobDto(DtoBaseModel):
 
 
 class MetadataDto(DtoBaseModel):
-    duration: float
-    fps: int
-    codec: str
+    duration: float | None
+    fps: int | None
+    codec: str | None
 
 
 class JobDoneDto(JobDto):
     state: JobState = Field(default=JobState.DONE)
-    original_url: str
-    preview_url: str
-    thumbnail_url: str
-    original_video_metadata: MetadataDto
+    original_url: str | None
+    preview_url: str | None
+    thumbnail_url: str | None
+    original_video_metadata: MetadataDto | None
 
 
 class JobFailedDto(JobDto):
