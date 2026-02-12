@@ -7,7 +7,7 @@ from app.job_state import JobState
 
 def upload_video(file: FileStorage) -> JobDto:
     # TODO: call Celery worker and register the job in database
-    return JobDto(id=0, state=JobState.QUEUED)
+    return JobDto(id=120, state=JobState.QUEUED)
 
 
 def get_job(id: int) -> JobDto | None:
