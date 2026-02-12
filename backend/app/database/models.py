@@ -1,4 +1,5 @@
 from sqlalchemy import Enum
+from sqlalchemy.schema import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database.base import Base
 from app.job_state import JobState
@@ -22,4 +23,5 @@ class MetaData(Base):
     duration: Mapped[int] = mapped_column()
     fps: Mapped[int] = mapped_column()
     codec: Mapped[str] = mapped_column()
+    job_id: Mapped[int] = mapped_column(ForeignKey("job.id"))
     job: Mapped["Job"] = relationship(back_populates="original_video_metadata")
