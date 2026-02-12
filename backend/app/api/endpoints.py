@@ -1,8 +1,5 @@
 from flask import Flask, Response, request, jsonify
-from app.api.dtos import JobDoneDto, JobDto, JobFailedDto
-from app.database.session import SessionLocal
-from app.database.models import Job
-from app.job_state import JobState
+from app.api.services import upload_video as upload_video_service, get_job as get_job_service
 
 
 def is_allowed_file(filename: str | None) -> bool:
@@ -29,35 +26,17 @@ def init_endpoints(app: Flask):
             # TODO: implement error handling
             return Response(status=400)
 
-        if file and is_allowed_file(file.filename):
-            # TODO: call Celery worker with file
-            response_dto = JobDto(id=0, state=JobState.QUEUED)
-            return jsonify(response_dto.model_dump()), 201
+        if not file or not is_allowed_file(file.filename):
+            # TODO: implement error handling
+            return Response(status=400)
 
-        # TODO: implement error handling
-        return Response(status=400)
+        response_dto = upload_video_service(file)
+        return jsonify(response_dto.model_dump()), 201
 
     @app.route("/api/jobs/<job_id>", methods=["GET"])
     def get_job(job_id: str):
-        session = SessionLocal()
-
-        try:
-            job = session.query(Job).get(int(job_id))
-            if not job:
-                # TODO: implement error handling
-                return Response(status=400)
-            match job.state:
-                case JobState.DONE:
-                    dto = JobDoneDto.model_validate(job)
-                    return jsonify(dto.model_dump()), 200
-                case JobState.FAILED:
-                    dto = JobFailedDto(id=job.id, error_message="Job failed during execution")
-                    return jsonify(dto.model_dump()), 200
-                case _:
-                    dto = JobDto.model_validate(job)
-                    return jsonify(dto.model_dump()), 200
-        except Exception:
-            # TODO: implement error handling
-            return Response(status=500)
-        finally:
-            session.close()
+        id = int(job_id)
+        jobDto = get_job_service(id)
+        if not jobDto:
+            return Response(status=400)
+        return jobDto.model_dump()
