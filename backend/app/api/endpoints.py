@@ -16,21 +16,21 @@ def init_endpoints(app: Flask):
 
     @app.route("/api/uploads", methods=["POST"])
     def upload_video():
-        if "file" not in request.files:
+        if "video" not in request.files:
             # TODO: implement error handling
             return Response(status=400)
 
-        file = request.files['file']
+        video = request.files["video"]
 
-        if not file.filename:
+        if not video.filename:
             # TODO: implement error handling
             return Response(status=400)
 
-        if not file or not is_allowed_file(file.filename):
+        if not video or not is_allowed_file(video.filename):
             # TODO: implement error handling
             return Response(status=400)
 
-        response_dto = upload_video_service(file)
+        response_dto = upload_video_service(video)
         return jsonify(response_dto.model_dump()), 201
 
     @app.route("/api/jobs/<job_id>", methods=["GET"])
