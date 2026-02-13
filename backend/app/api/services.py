@@ -3,11 +3,25 @@ from app.api.dtos import JobDoneDto, JobDto, JobFailedDto
 from app.database.session import SessionLocal
 from app.database.models import Job
 from app.job_state import JobState
+from app.worker.video_worker import process_video
 
 
 def upload_video(file: FileStorage) -> JobDto:
-    # TODO: call Celery worker and register the job in database
-    return JobDto(id=120, state=JobState.QUEUED)
+    session = SessionLocal()
+
+    try:
+        new_job = Job(state=JobState.QUEUED)
+        session.add(new_job)
+        session.commit()
+        session.refresh(new_job)
+        process_video.delay(new_job.id, file)
+    except Exception as e:
+        session.rollback()
+        raise e
+    finally:
+        session.close()
+
+    return JobDto.model_validate(new_job)
 
 
 def get_job(id: int) -> JobDto | None:
