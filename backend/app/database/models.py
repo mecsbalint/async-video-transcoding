@@ -1,4 +1,4 @@
-from typing import List, Literal
+from typing import List
 from sqlalchemy import Enum
 from sqlalchemy.schema import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
