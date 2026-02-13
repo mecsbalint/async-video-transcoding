@@ -1,3 +1,4 @@
+from typing import List, Literal
 from sqlalchemy import Enum
 from sqlalchemy.schema import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -13,15 +14,39 @@ class Job(Base):
     original_url: Mapped[str] = mapped_column()
     preview_url: Mapped[str] = mapped_column()
     thumbnail_url: Mapped[str] = mapped_column()
-    original_video_metadata: Mapped["MetaData"] = relationship(back_populates="job")
+    duration: Mapped[int] = mapped_column()
+    video_stream_metadata: Mapped[List["VideoStreamMetaData"]] = relationship(back_populates="job")
+    audio_stream_metadata: Mapped[List["AudioStreamMetaData"]] = relationship(back_populates="job")
+    subtitles_stream_metadata: Mapped[List["SubtitlesStreamMetaData"]] = relationship(back_populates="job")
 
 
-class MetaData(Base):
-    __tablename__ = "metadata"
+class VideoStreamMetaData(Base):
+    __tablename__ = "video_stream_metadata"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    duration: Mapped[int] = mapped_column()
-    fps: Mapped[int] = mapped_column()
+    fps: Mapped[float] = mapped_column()
+    codec: Mapped[str] = mapped_column()
+    width: Mapped[int] = mapped_column()
+    height: Mapped[int] = mapped_column()
+    job_id: Mapped[int] = mapped_column(ForeignKey("job.id"))
+    job: Mapped["Job"] = relationship(back_populates="video_stream_metadata")
+
+
+class AudioStreamMetaData(Base):
+    __tablename__ = "audio_stream_metadata"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    fps: Mapped[float] = mapped_column()
     codec: Mapped[str] = mapped_column()
     job_id: Mapped[int] = mapped_column(ForeignKey("job.id"))
-    job: Mapped["Job"] = relationship(back_populates="original_video_metadata")
+    job: Mapped["Job"] = relationship(back_populates="audio_stream_metadata")
+
+
+class SubtitlesStreamMetaData(Base):
+    __tablename__ = "subtitles_stream_metadata"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    fps: Mapped[float] = mapped_column()
+    codec: Mapped[str] = mapped_column()
+    job_id: Mapped[int] = mapped_column(ForeignKey("job.id"))
+    job: Mapped["Job"] = relationship(back_populates="subtitles_stream_metadata")
