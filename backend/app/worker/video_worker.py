@@ -13,12 +13,16 @@ from app.database.session import SessionLocal
 from app.job_state import JobState
 
 
+TIMEOUT = 60
+
+
 app = Celery("video_worker", broker="redis://localhost:6379/0")
 
 
 @app.task
 def process_video(id: int, video: FileStorage):
 
+    # TODO: retry mechanism with maximum number of retries and a backoff mechanism (delaying retries)
     try:
         __update_job_state_in_db(id, JobState.RUNNING)
 
@@ -122,9 +126,10 @@ def __run_process(command: List[str], video: FileStorage, *, capture_output: boo
             command,
             capture_output=capture_output,
             input=video.stream.read(),
-            check=True
+            check=True,
+            timeout=TIMEOUT
         )
-    except subprocess.CalledProcessError as e:
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
         for saved_file_path in saved_files_path:
             if os.path.exists(saved_file_path):
                 os.remove(saved_file_path)
