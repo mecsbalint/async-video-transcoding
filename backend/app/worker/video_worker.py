@@ -17,11 +17,11 @@ def process_video(id: int, video: FileStorage):
 
     duration, video_stream_list, audio_stream_list, subtitles_stream_list = __process_metadata(video)
 
-    __generate_thumbnail(id, video, duration)
+    thumbnail_local_path = __generate_thumbnail(id, video, duration)
 
-    __generate_preview(id, video, video_stream_list, audio_stream_list)
+    preview_local_path = __generate_preview(id, video)
 
-    __save_video(id, video)
+    video_local_path = __save_video(id, video)
 
 
 def __process_metadata(video: FileStorage) -> tuple[float, List[VideoStreamMetaData], List[AudioStreamMetaData], List[SubtitlesStreamMetaData]]:
@@ -77,37 +77,37 @@ def __calc_fps(fps_raw: str) -> float:
     return int(dividend) / int(divisor)
 
 
-def __generate_thumbnail(id: int, video: FileStorage, duration: float):
+def __generate_thumbnail(id: int, video: FileStorage, duration: float) -> str:
     random_second = randrange(1, ceil(duration) if duration < 59 else 60)
 
+    local_output_file_path = f"{id}/thumbnail.jpg"
+
     subprocess.run(
-        ["ffmpeg", "-i", "pipe:0", "-ss", f"00:00:{random_second:02d}.000", "-vframes", "1", "-vf", "scale=-2:360", f"{UPLOAD_FOLDER_PATH}/{id}/thumbnail.jpg"],
+        ["ffmpeg", "-i", "pipe:0", "-ss", f"00:00:{random_second:02d}.000", "-vframes", "1", "-vf", "scale=-2:360", f"{UPLOAD_FOLDER_PATH}/{local_output_file_path}"],
         input=video.stream.read(),
         check=True
     )
 
+    return local_output_file_path
 
-def __generate_preview(id: int, video: FileStorage, video_streams: List[VideoStreamMetaData], audio_streams: List[AudioStreamMetaData]):
 
-    video_stream_index = next((i for i, stream in enumerate(video_streams) if stream.codec == "libx264"), None)
-    audio_stream_index = next((i for i, stream in enumerate(audio_streams) if stream.codec == "aac"), None)
+def __generate_preview(id: int, video: FileStorage) -> str:
 
-    if video_stream_index:
-        video_stream_subcommand = [f"0:v:{video_stream_index}"]
-    else:
-        video_stream_subcommand = ["0:v:0", "-c:v", "libx264"]
-
-    if audio_stream_index:
-        audio_stream_subcommand = [f"0:a:{audio_stream_index}"]
-    else:
-        audio_stream_subcommand = ["0:a:0?", "-c:a", "aac"]
+    local_output_file_path = f"{id}/thumbnail.jpg"
 
     subprocess.run(
-        ["ffmpeg", "-y", "-i", "pipe:0", "-map", *video_stream_subcommand, "-map", *audio_stream_subcommand, "-vf", "scale=-2:480", f"{UPLOAD_FOLDER_PATH}/{id}/thumbnail.jpg"],
+        ["ffmpeg", "-y", "-i", "pipe:0", "-map", "0:v:0", "-c:v", "h264", "-map", "0:a:0?", "-c:a", "aac", "-vf", "scale=-2:480", f"{UPLOAD_FOLDER_PATH}/{local_output_file_path}"],
         input=video.stream.read(),
         check=True
     )
 
+    return local_output_file_path
 
-def __save_video(id: int, video: FileStorage):
-    video.save(f"{UPLOAD_FOLDER_PATH}/{id}/{video.filename}")
+
+def __save_video(id: int, video: FileStorage) -> str:
+
+    local_output_file_path = f"{id}/{video.filename}"
+
+    video.save(f"{UPLOAD_FOLDER_PATH}/{local_output_file_path}")
+
+    return local_output_file_path
