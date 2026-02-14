@@ -14,10 +14,10 @@ class Job(Base):
     original_url: Mapped[str] = mapped_column()
     preview_url: Mapped[str] = mapped_column()
     thumbnail_url: Mapped[str] = mapped_column()
-    duration: Mapped[int] = mapped_column()
-    video_stream_metadata: Mapped[List["VideoStreamMetaData"]] = relationship(back_populates="job")
-    audio_stream_metadata: Mapped[List["AudioStreamMetaData"]] = relationship(back_populates="job")
-    subtitles_stream_metadata: Mapped[List["SubtitlesStreamMetaData"]] = relationship(back_populates="job")
+    duration: Mapped[float] = mapped_column()
+    video_streams_metadata: Mapped[List["VideoStreamMetaData"]] = relationship(back_populates="job")
+    audio_streams_metadata: Mapped[List["AudioStreamMetaData"]] = relationship(back_populates="job")
+    subtitles_streams_metadata: Mapped[List["SubtitlesStreamMetaData"]] = relationship(back_populates="job")
 
 
 class VideoStreamMetaData(Base):
@@ -29,7 +29,7 @@ class VideoStreamMetaData(Base):
     width: Mapped[int] = mapped_column()
     height: Mapped[int] = mapped_column()
     job_id: Mapped[int] = mapped_column(ForeignKey("job.id"))
-    job: Mapped["Job"] = relationship(back_populates="video_stream_metadata")
+    job: Mapped["Job"] = relationship(back_populates="video_streams_metadata")
 
 
 class AudioStreamMetaData(Base):
@@ -39,7 +39,7 @@ class AudioStreamMetaData(Base):
     fps: Mapped[float] = mapped_column()
     codec: Mapped[str] = mapped_column()
     job_id: Mapped[int] = mapped_column(ForeignKey("job.id"))
-    job: Mapped["Job"] = relationship(back_populates="audio_stream_metadata")
+    job: Mapped["Job"] = relationship(back_populates="audio_streams_metadata")
 
 
 class SubtitlesStreamMetaData(Base):
@@ -49,4 +49,4 @@ class SubtitlesStreamMetaData(Base):
     fps: Mapped[float] = mapped_column()
     codec: Mapped[str] = mapped_column()
     job_id: Mapped[int] = mapped_column(ForeignKey("job.id"))
-    job: Mapped["Job"] = relationship(back_populates="subtitles_stream_metadata")
+    job: Mapped["Job"] = relationship(back_populates="subtitles_streams_metadata")

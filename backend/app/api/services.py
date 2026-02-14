@@ -27,7 +27,7 @@ def upload_video(file: FileStorage) -> JobDto:
 def get_job(id: int) -> JobDto | None:
     session = SessionLocal()
     try:
-        job = session.query(Job).get(id)
+        job = session.get(Job, id)
         if not job:
             return None
         match job.state:
