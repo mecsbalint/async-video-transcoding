@@ -31,6 +31,8 @@ def process_video(id: int, video: FileStorage):
 
 
 def __update_job_state_in_db(id: int, state: JobState):
+    print(f"Update job [id:{id}] state to {state.value}")
+
     session = SessionLocal()
     try:
         job = session.get(Job, id)
@@ -41,6 +43,8 @@ def __update_job_state_in_db(id: int, state: JobState):
     except Exception as e:
         session.rollback()
         raise e
+    else:
+        print(f"Update job [id:{id}] state is finished")
     finally:
         session.close()
 
@@ -82,8 +86,12 @@ def __process_metadata(video: FileStorage) -> tuple[float, List[VideoStreamMetaD
 
 def __get_metadata(video: FileStorage):
 
+    command = ["ffprobe", "-print_format", "json", "-show_format", "-show_streams", "pipe:0"]
+
+    print(f"Video metadata extraction: {" ".join(command)}")
+
     process = subprocess.run(
-        ["ffprobe", "-print_format", "json", "-show_format", "-show_streams", "pipe:0"],
+        command,
         capture_output=True,
         input=video.stream.read(),
         check=True
@@ -104,11 +112,17 @@ def __generate_thumbnail(id: int, video: FileStorage, duration: float) -> str:
 
     local_output_file_path = f"{id}/thumbnail.jpg"
 
+    command = ["ffmpeg", "-i", "pipe:0", "-ss", f"00:00:{random_second:02d}.000", "-vframes", "1", "-vf", "scale=-2:360", f"{UPLOAD_FOLDER_PATH}/{local_output_file_path}"]
+
+    print(f"Generate thumbnail file: {" ".join(command)}")
+
     subprocess.run(
-        ["ffmpeg", "-i", "pipe:0", "-ss", f"00:00:{random_second:02d}.000", "-vframes", "1", "-vf", "scale=-2:360", f"{UPLOAD_FOLDER_PATH}/{local_output_file_path}"],
+        command,
         input=video.stream.read(),
         check=True
     )
+
+    print(f"Thumbnail file saved to: {f"{UPLOAD_FOLDER_PATH}/{local_output_file_path}"}")
 
     return local_output_file_path
 
@@ -117,25 +131,38 @@ def __generate_preview(id: int, video: FileStorage) -> str:
 
     local_output_file_path = f"{id}/thumbnail.jpg"
 
+    command = ["ffmpeg", "-y", "-i", "pipe:0", "-map", "0:v:0", "-c:v", "h264", "-map", "0:a:0?", "-c:a", "aac", "-vf", "scale=-2:480", f"{UPLOAD_FOLDER_PATH}/{local_output_file_path}"]
+
+    print(f"Generate preview file: {" ".join(command)}")
+
     subprocess.run(
-        ["ffmpeg", "-y", "-i", "pipe:0", "-map", "0:v:0", "-c:v", "h264", "-map", "0:a:0?", "-c:a", "aac", "-vf", "scale=-2:480", f"{UPLOAD_FOLDER_PATH}/{local_output_file_path}"],
+        command,
         input=video.stream.read(),
         check=True
     )
+
+    print(f"Preview file saved to: {f"{UPLOAD_FOLDER_PATH}/{local_output_file_path}"}")
 
     return local_output_file_path
 
 
 def __save_video(id: int, video: FileStorage) -> str:
 
+    print("Save original video ")
+
     local_output_file_path = f"{id}/{video.filename}"
 
     video.save(f"{UPLOAD_FOLDER_PATH}/{local_output_file_path}")
+
+    print(f"Original video file saved to: {f"{UPLOAD_FOLDER_PATH}/{local_output_file_path}"}")
 
     return local_output_file_path
 
 
 def __update_job_in_db(id: int, duration: float, thumbnail_local_path: str, preview_local_path: str, video_local_path: str, video_stream_list: List[VideoStreamMetaData], audio_stream_list: List[AudioStreamMetaData], subtitles_stream_list: List[SubtitlesStreamMetaData]):
+
+    print(f"Update job [id:{id}] data")
+
     session = SessionLocal()
 
     thumbnail_url = f"{STATIC_FOLDER_URL}/{thumbnail_local_path}"
@@ -162,5 +189,7 @@ def __update_job_in_db(id: int, duration: float, thumbnail_local_path: str, prev
     except Exception as e:
         session.rollback()
         raise e
+    else:
+        print(f"Update job [id:{id}] data is finished")
     finally:
         session.close()
