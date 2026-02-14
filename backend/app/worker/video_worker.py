@@ -5,6 +5,8 @@ import json
 import subprocess
 from random import randrange
 from math import ceil
+import os
+import shutil
 from app.folders import UPLOAD_FOLDER_PATH, STATIC_FOLDER_URL
 from app.database.models import Job, VideoStreamMetaData, AudioStreamMetaData, SubtitlesStreamMetaData
 from app.database.session import SessionLocal
@@ -30,8 +32,16 @@ def process_video(id: int, video: FileStorage):
 
         __update_job_in_db(id, duration, thumbnail_local_path, preview_local_path, video_local_path, video_stream_list, audio_stream_list, subtitles_stream_list)
     except Exception as e:
-        print(f"The process stopped with error: {e}")
-        __update_job_state_in_db(id, JobState.FAILED)
+        try:
+            folder_path = os.path.join(UPLOAD_FOLDER_PATH, str(id))
+            shutil.rmtree(folder_path)
+        except FileNotFoundError:
+            pass
+        except Exception:
+            print("Error cleaning up the folder")
+        finally:
+            print(f"The process stopped with error: {e}")
+            __update_job_state_in_db(id, JobState.FAILED)
 
 
 def __update_job_state_in_db(id: int, state: JobState):
@@ -103,7 +113,7 @@ def __get_metadata(video: FileStorage):
     return metadata
 
 
-def __run_process(command: List[str], video: FileStorage, *, capture_output: bool = False) -> subprocess.CompletedProcess[bytes]:
+def __run_process(command: List[str], video: FileStorage, *, capture_output: bool = False, saved_files_path: List[str] = []) -> subprocess.CompletedProcess[bytes]:
     try:
         process = subprocess.run(
             command,
@@ -112,6 +122,9 @@ def __run_process(command: List[str], video: FileStorage, *, capture_output: boo
             check=True
         )
     except subprocess.CalledProcessError as e:
+        for saved_file_path in saved_files_path:
+            if os.path.exists(saved_file_path):
+                os.remove(saved_file_path)
         print("Process failed")
         print(e.stderr)
         raise RuntimeError(f"Process excecution failed with command: {" ".join(command)}")
@@ -129,13 +142,15 @@ def __generate_thumbnail(id: int, video: FileStorage, duration: float) -> str:
 
     local_output_file_path = f"{id}/thumbnail.jpg"
 
-    command = ["ffmpeg", "-i", "pipe:0", "-ss", f"00:00:{random_second:02d}.000", "-vframes", "1", "-vf", "scale=-2:360", f"{UPLOAD_FOLDER_PATH}/{local_output_file_path}"]
+    output_file_path = f"{UPLOAD_FOLDER_PATH}/{local_output_file_path}"
+
+    command = ["ffmpeg", "-i", "pipe:0", "-ss", f"00:00:{random_second:02d}.000", "-vframes", "1", "-vf", "scale=-2:360", output_file_path]
 
     print(f"Generate thumbnail file: {" ".join(command)}")
 
-    __run_process(command, video)
+    __run_process(command, video, saved_files_path=[f"{UPLOAD_FOLDER_PATH}/{local_output_file_path}"])
 
-    print(f"Thumbnail file saved to: {f"{UPLOAD_FOLDER_PATH}/{local_output_file_path}"}")
+    print(f"Thumbnail file saved to: {output_file_path}")
 
     return local_output_file_path
 
@@ -144,13 +159,15 @@ def __generate_preview(id: int, video: FileStorage) -> str:
 
     local_output_file_path = f"{id}/thumbnail.jpg"
 
-    command = ["ffmpeg", "-y", "-i", "pipe:0", "-map", "0:v:0", "-c:v", "h264", "-map", "0:a:0?", "-c:a", "aac", "-vf", "scale=-2:480", f"{UPLOAD_FOLDER_PATH}/{local_output_file_path}"]
+    output_file_path = f"{UPLOAD_FOLDER_PATH}/{local_output_file_path}"
+
+    command = ["ffmpeg", "-y", "-i", "pipe:0", "-map", "0:v:0", "-c:v", "h264", "-map", "0:a:0?", "-c:a", "aac", "-vf", "scale=-2:480", output_file_path]
 
     print(f"Generate preview file: {" ".join(command)}")
 
-    __run_process(command, video)
+    __run_process(command, video, saved_files_path=[output_file_path])
 
-    print(f"Preview file saved to: {f"{UPLOAD_FOLDER_PATH}/{local_output_file_path}"}")
+    print(f"Preview file saved to: {output_file_path}")
 
     return local_output_file_path
 
@@ -161,9 +178,18 @@ def __save_video(id: int, video: FileStorage) -> str:
 
     local_output_file_path = f"{id}/{video.filename}"
 
-    video.save(f"{UPLOAD_FOLDER_PATH}/{local_output_file_path}")
+    output_file_path = f"{UPLOAD_FOLDER_PATH}/{local_output_file_path}"
 
-    print(f"Original video file saved to: {f"{UPLOAD_FOLDER_PATH}/{local_output_file_path}"}")
+    try:
+        video.save(output_file_path)
+    except OSError as e:
+        if os.path.exists(output_file_path):
+            os.remove(output_file_path)
+        print("File save failed")
+        print(e)
+        raise RuntimeError(f"Original file saving failed to directory: {output_file_path}")
+
+    print(f"Original video file saved to: {output_file_path}")
 
     return local_output_file_path
 
