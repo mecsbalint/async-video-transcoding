@@ -1,4 +1,4 @@
-from typing import List, Literal
+from typing import List, Literal, cast
 from celery import Celery
 from werkzeug.datastructures import FileStorage
 import json
@@ -106,14 +106,17 @@ def __get_metadata(video: FileStorage):
 
     print(f"Video metadata extraction: {" ".join(command)}")
 
-    process = __run_process(command, video, capture_output=True)
+    process = cast(subprocess.CompletedProcess[bytes], __run_process(command, video, capture_output=True))
 
     metadata = json.loads(process.stdout)
 
     return metadata
 
 
-def __run_process(command: List[str], video: FileStorage, *, capture_output: bool = False, saved_files_path: List[str] = []) -> subprocess.CompletedProcess[bytes]:
+def __run_process(command: List[str], video: FileStorage, *, capture_output: bool = False, saved_files_path: List[str] = []) -> subprocess.CompletedProcess[bytes] | None:
+    if next((file_path for file_path in saved_files_path if not os.path.exists(file_path)), None) is None:
+        return None
+
     try:
         process = subprocess.run(
             command,
@@ -174,9 +177,12 @@ def __generate_preview(id: int, video: FileStorage) -> str:
 
 def __save_video(id: int, video: FileStorage) -> str:
 
-    print("Save original video ")
-
     local_output_file_path = f"{id}/{video.filename}"
+
+    if os.path.exists(local_output_file_path):
+        return local_output_file_path
+
+    print("Save original video ")
 
     output_file_path = f"{UPLOAD_FOLDER_PATH}/{local_output_file_path}"
 
