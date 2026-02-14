@@ -17,6 +17,8 @@ app = Celery("video_worker", broker="redis://localhost:6379/0")
 @app.task
 def process_video(id: int, video: FileStorage):
 
+    __update_job_state_in_db(id, JobState.RUNNING)
+
     duration, video_stream_list, audio_stream_list, subtitles_stream_list = __process_metadata(video)
 
     thumbnail_local_path = __generate_thumbnail(id, video, duration)
@@ -26,6 +28,21 @@ def process_video(id: int, video: FileStorage):
     video_local_path = __save_video(id, video)
 
     __update_job_in_db(id, duration, thumbnail_local_path, preview_local_path, video_local_path, video_stream_list, audio_stream_list, subtitles_stream_list)
+
+
+def __update_job_state_in_db(id: int, state: JobState):
+    session = SessionLocal()
+    try:
+        job = session.get(Job, id)
+        if not job:
+            raise Exception()
+        job.state = state
+        session.commit()
+    except Exception as e:
+        session.rollback()
+        raise e
+    finally:
+        session.close()
 
 
 def __process_metadata(video: FileStorage) -> tuple[float, List[VideoStreamMetaData], List[AudioStreamMetaData], List[SubtitlesStreamMetaData]]:
@@ -68,7 +85,8 @@ def __get_metadata(video: FileStorage):
     process = subprocess.run(
         ["ffprobe", "-print_format", "json", "-show_format", "-show_streams", "pipe:0"],
         capture_output=True,
-        input=video.stream.read()
+        input=video.stream.read(),
+        check=True
     )
 
     metadata = json.loads(process.stdout)
