@@ -17,17 +17,21 @@ app = Celery("video_worker", broker="redis://localhost:6379/0")
 @app.task
 def process_video(id: int, video: FileStorage):
 
-    __update_job_state_in_db(id, JobState.RUNNING)
+    try:
+        __update_job_state_in_db(id, JobState.RUNNING)
 
-    duration, video_stream_list, audio_stream_list, subtitles_stream_list = __process_metadata(video)
+        duration, video_stream_list, audio_stream_list, subtitles_stream_list = __process_metadata(video)
 
-    thumbnail_local_path = __generate_thumbnail(id, video, duration)
+        thumbnail_local_path = __generate_thumbnail(id, video, duration)
 
-    preview_local_path = __generate_preview(id, video)
+        preview_local_path = __generate_preview(id, video)
 
-    video_local_path = __save_video(id, video)
+        video_local_path = __save_video(id, video)
 
-    __update_job_in_db(id, duration, thumbnail_local_path, preview_local_path, video_local_path, video_stream_list, audio_stream_list, subtitles_stream_list)
+        __update_job_in_db(id, duration, thumbnail_local_path, preview_local_path, video_local_path, video_stream_list, audio_stream_list, subtitles_stream_list)
+    except Exception as e:
+        print(f"The process stopped with error: {e}")
+        __update_job_state_in_db(id, JobState.FAILED)
 
 
 def __update_job_state_in_db(id: int, state: JobState):
@@ -42,6 +46,8 @@ def __update_job_state_in_db(id: int, state: JobState):
         session.commit()
     except Exception as e:
         session.rollback()
+        print("Database process failed")
+        print(f"An error occured during database process while updating job [id:{id}]")
         raise e
     else:
         print(f"Update job [id:{id}] state is finished")
@@ -90,16 +96,27 @@ def __get_metadata(video: FileStorage):
 
     print(f"Video metadata extraction: {" ".join(command)}")
 
-    process = subprocess.run(
-        command,
-        capture_output=True,
-        input=video.stream.read(),
-        check=True
-    )
+    process = __run_process(command, video, capture_output=True)
 
     metadata = json.loads(process.stdout)
 
     return metadata
+
+
+def __run_process(command: List[str], video: FileStorage, *, capture_output: bool = False) -> subprocess.CompletedProcess[bytes]:
+    try:
+        process = subprocess.run(
+            command,
+            capture_output=capture_output,
+            input=video.stream.read(),
+            check=True
+        )
+    except subprocess.CalledProcessError as e:
+        print("Process failed")
+        print(e.stderr)
+        raise RuntimeError(f"Process excecution failed with command: {" ".join(command)}")
+    else:
+        return process
 
 
 def __calc_fps(fps_raw: str) -> float:
@@ -116,11 +133,7 @@ def __generate_thumbnail(id: int, video: FileStorage, duration: float) -> str:
 
     print(f"Generate thumbnail file: {" ".join(command)}")
 
-    subprocess.run(
-        command,
-        input=video.stream.read(),
-        check=True
-    )
+    __run_process(command, video)
 
     print(f"Thumbnail file saved to: {f"{UPLOAD_FOLDER_PATH}/{local_output_file_path}"}")
 
@@ -135,11 +148,7 @@ def __generate_preview(id: int, video: FileStorage) -> str:
 
     print(f"Generate preview file: {" ".join(command)}")
 
-    subprocess.run(
-        command,
-        input=video.stream.read(),
-        check=True
-    )
+    __run_process(command, video)
 
     print(f"Preview file saved to: {f"{UPLOAD_FOLDER_PATH}/{local_output_file_path}"}")
 
@@ -188,6 +197,8 @@ def __update_job_in_db(id: int, duration: float, thumbnail_local_path: str, prev
         session.commit()
     except Exception as e:
         session.rollback()
+        print("Database process failed")
+        print(f"An error occured during database process while updating job [id:{id}]")
         raise e
     else:
         print(f"Update job [id:{id}] data is finished")
