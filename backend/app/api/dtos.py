@@ -1,3 +1,4 @@
+from typing import List
 from pydantic import BaseModel, Field
 from app.job_state import JobState
 
@@ -8,15 +9,26 @@ class DtoBaseModel(BaseModel):
     }
 
 
+class VideoStreamMetadataDto(DtoBaseModel):
+    fps: float | None
+    codec: str | None
+    width: int | None
+    height: int | None
+
+
+class AudioStreamMetadataDto(DtoBaseModel):
+    fps: int | None
+    codec: str | None
+
+
+class SubtitlesStreamMetadataDto(DtoBaseModel):
+    fps: int | None
+    codec: str | None
+
+
 class JobDto(DtoBaseModel):
     id: int
     state: JobState
-
-
-class MetadataDto(DtoBaseModel):
-    duration: float | None
-    fps: int | None
-    codec: str | None
 
 
 class JobDoneDto(JobDto):
@@ -24,7 +36,10 @@ class JobDoneDto(JobDto):
     original_url: str | None
     preview_url: str | None
     thumbnail_url: str | None
-    original_video_metadata: MetadataDto | None
+    duration: float | None
+    video_streams_metadata: List[VideoStreamMetadataDto]
+    audio_streams_metadata: List[AudioStreamMetadataDto]
+    subtitles_streams_metadata: List[SubtitlesStreamMetadataDto]
 
 
 class JobFailedDto(JobDto):
