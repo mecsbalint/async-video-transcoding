@@ -1,6 +1,6 @@
 from flask import Flask
 from app.api.endpoints import init_endpoints
-from backend.app.folders import UPLOAD_FOLDER_PATH, STATIC_FOLDER_URL
+from app.folders import UPLOAD_FOLDER_PATH, STATIC_FOLDER_URL
 
 ALLOWED_EXTENSIONS = {"mp4", "mkv"}
 

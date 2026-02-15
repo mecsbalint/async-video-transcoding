@@ -1,3 +1,4 @@
+from io import BufferedReader
 from typing import List, Literal, cast
 from celery import Celery
 from werkzeug.datastructures import FileStorage
@@ -20,10 +21,12 @@ app = Celery("video_worker", broker="redis://localhost:6379/0")
 
 
 @app.task
-def process_video(id: int, video: FileStorage):
+def process_video(id: int, video_abs_path: str, video_local_path: str):
 
     # TODO: retry mechanism with maximum number of retries and a backoff mechanism (delaying retries)
     try:
+        video = open(video_abs_path, "rb")
+
         __update_job_state_in_db(id, JobState.RUNNING)
 
         duration, video_stream_list, audio_stream_list, subtitles_stream_list = __process_metadata(video)
@@ -31,8 +34,6 @@ def process_video(id: int, video: FileStorage):
         thumbnail_local_path = __generate_thumbnail(id, video, duration)
 
         preview_local_path = __generate_preview(id, video)
-
-        video_local_path = __save_video(id, video)
 
         __update_job_in_db(id, duration, thumbnail_local_path, preview_local_path, video_local_path, video_stream_list, audio_stream_list, subtitles_stream_list)
     except Exception as e:
@@ -69,7 +70,7 @@ def __update_job_state_in_db(id: int, state: JobState):
         session.close()
 
 
-def __process_metadata(video: FileStorage) -> tuple[float, List[VideoStreamMetaData], List[AudioStreamMetaData], List[SubtitlesStreamMetaData]]:
+def __process_metadata(video: BufferedReader) -> tuple[float, List[VideoStreamMetaData], List[AudioStreamMetaData], List[SubtitlesStreamMetaData]]:
     metadata = __get_metadata(video)
 
     duration = float(metadata["format"]["duration"])
@@ -104,7 +105,7 @@ def __process_metadata(video: FileStorage) -> tuple[float, List[VideoStreamMetaD
     return duration, video_stream_list, audio_stream_list, subtitles_stream_list
 
 
-def __get_metadata(video: FileStorage):
+def __get_metadata(video: BufferedReader):
 
     command = ["ffprobe", "-print_format", "json", "-show_format", "-show_streams", "pipe:0"]
 
@@ -117,7 +118,7 @@ def __get_metadata(video: FileStorage):
     return metadata
 
 
-def __run_process(command: List[str], video: FileStorage, *, capture_output: bool = False, saved_files_path: List[str] = []) -> subprocess.CompletedProcess[bytes] | None:
+def __run_process(command: List[str], video: BufferedReader, *, capture_output: bool = False, saved_files_path: List[str] = []) -> subprocess.CompletedProcess[bytes] | None:
     if next((file_path for file_path in saved_files_path if not os.path.exists(file_path)), None) is None:
         return None
 
@@ -125,7 +126,7 @@ def __run_process(command: List[str], video: FileStorage, *, capture_output: boo
         process = subprocess.run(
             command,
             capture_output=capture_output,
-            input=video.stream.read(),
+            input=video.read(),
             check=True,
             timeout=TIMEOUT
         )
@@ -145,7 +146,7 @@ def __calc_fps(fps_raw: str) -> float:
     return int(dividend) / int(divisor)
 
 
-def __generate_thumbnail(id: int, video: FileStorage, duration: float) -> str:
+def __generate_thumbnail(id: int, video: BufferedReader, duration: float) -> str:
     random_second = randrange(1, ceil(duration) if duration < 59 else 60)
 
     local_output_file_path = f"{id}/thumbnail.jpg"
@@ -163,7 +164,7 @@ def __generate_thumbnail(id: int, video: FileStorage, duration: float) -> str:
     return local_output_file_path
 
 
-def __generate_preview(id: int, video: FileStorage) -> str:
+def __generate_preview(id: int, video: BufferedReader) -> str:
 
     local_output_file_path = f"{id}/thumbnail.jpg"
 
@@ -176,31 +177,6 @@ def __generate_preview(id: int, video: FileStorage) -> str:
     __run_process(command, video, saved_files_path=[output_file_path])
 
     print(f"Preview file saved to: {output_file_path}")
-
-    return local_output_file_path
-
-
-def __save_video(id: int, video: FileStorage) -> str:
-
-    local_output_file_path = f"{id}/{video.filename}"
-
-    if os.path.exists(local_output_file_path):
-        return local_output_file_path
-
-    print("Save original video ")
-
-    output_file_path = f"{UPLOAD_FOLDER_PATH}/{local_output_file_path}"
-
-    try:
-        video.save(output_file_path)
-    except OSError as e:
-        if os.path.exists(output_file_path):
-            os.remove(output_file_path)
-        print("File save failed")
-        print(e)
-        raise RuntimeError(f"Original file saving failed to directory: {output_file_path}")
-
-    print(f"Original video file saved to: {output_file_path}")
 
     return local_output_file_path
 
