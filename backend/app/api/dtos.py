@@ -10,7 +10,7 @@ class DtoBaseModel(BaseModel):
 
 
 class VideoStreamMetadataDto(DtoBaseModel):
-    fps: int | None
+    fps: float | None
     codec: str | None
     width: int | None
     height: int | None
@@ -37,9 +37,9 @@ class JobDoneDto(JobDto):
     preview_url: str | None
     thumbnail_url: str | None
     duration: float | None
-    video_stream_metadata: List[VideoStreamMetadataDto]
-    audio_stream_metadata: List[AudioStreamMetadataDto]
-    subtitles_stream_metadata: List[SubtitlesStreamMetadataDto]
+    video_streams_metadata: List[VideoStreamMetadataDto]
+    audio_streams_metadata: List[AudioStreamMetadataDto]
+    subtitles_streams_metadata: List[SubtitlesStreamMetadataDto]
 
 
 class JobFailedDto(JobDto):
