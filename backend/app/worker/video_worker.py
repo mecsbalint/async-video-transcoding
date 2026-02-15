@@ -33,8 +33,8 @@ def process_video(id: int, video_abs_path: str, video_local_path: str):
         __update_job_state_in_db(id, JobState.RUNNING)
 
         success = False
-        video = None
         for attempt in range(1, NUM_OF_TRIES + 1):
+            video = None
             try:
                 print(f"Start of attempt no. {attempt}")
                 video = open(video_abs_path, "rb")
