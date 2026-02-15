@@ -30,13 +30,14 @@ def process_video(id: int, video_abs_path: str, video_local_path: str):
         # TODO: delete it after dockerization (windows-specific code)
         os.chmod(f"{UPLOAD_FOLDER_PATH}\\{id}", stat.S_IRWXU)
 
+        __update_job_state_in_db(id, JobState.RUNNING)
+
         success = False
         video = None
         for attempt in range(1, NUM_OF_TRIES + 1):
             try:
                 print(f"Start of attempt no. {attempt}")
                 video = open(video_abs_path, "rb")
-                __update_job_state_in_db(id, JobState.RUNNING)
                 duration, video_stream_list, audio_stream_list, subtitles_stream_list = __process_metadata(video)
                 thumbnail_local_path = __generate_thumbnail(id, video, duration)
                 preview_local_path = __generate_preview(id, video)
@@ -47,7 +48,8 @@ def process_video(id: int, video_abs_path: str, video_local_path: str):
             except Exception as e:
                 print(f"The process stopped with error: {e}")
                 print(f"Attempt no. {attempt} has failed")
-                time.sleep(RETRY_DELAY)
+                if attempt < NUM_OF_TRIES:
+                    time.sleep(RETRY_DELAY)
             finally:
                 if video:
                     video.close()
