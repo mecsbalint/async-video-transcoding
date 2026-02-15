@@ -1,12 +1,12 @@
 from io import BufferedReader
 from typing import List, Literal, cast
 from celery import Celery
-from werkzeug.datastructures import FileStorage
 import json
 import subprocess
 from random import randrange
 from math import ceil
 import os
+import stat
 import shutil
 from app.folders import UPLOAD_FOLDER_PATH, STATIC_FOLDER_URL
 from app.database.models import Job, VideoStreamMetaData, AudioStreamMetaData, SubtitlesStreamMetaData
@@ -24,8 +24,10 @@ app = Celery("video_worker", broker="redis://localhost:6379/0")
 def process_video(id: int, video_abs_path: str, video_local_path: str):
 
     # TODO: retry mechanism with maximum number of retries and a backoff mechanism (delaying retries)
+    video = open(video_abs_path, "rb")
     try:
-        video = open(video_abs_path, "rb")
+        # TODO: delete after dockerization (Windows-specific code)
+        os.chmod(f"{UPLOAD_FOLDER_PATH}\\{id}", stat.S_IRWXU)
 
         __update_job_state_in_db(id, JobState.RUNNING)
 
@@ -38,6 +40,7 @@ def process_video(id: int, video_abs_path: str, video_local_path: str):
         __update_job_in_db(id, duration, thumbnail_local_path, preview_local_path, video_local_path, video_stream_list, audio_stream_list, subtitles_stream_list)
     except Exception as e:
         try:
+            video.close()
             folder_path = os.path.join(UPLOAD_FOLDER_PATH, str(id))
             shutil.rmtree(folder_path)
         except FileNotFoundError:
@@ -47,6 +50,8 @@ def process_video(id: int, video_abs_path: str, video_local_path: str):
         finally:
             print(f"The process stopped with error: {e}")
             __update_job_state_in_db(id, JobState.FAILED)
+    else:
+        video.close()
 
 
 def __update_job_state_in_db(id: int, state: JobState):
@@ -65,7 +70,7 @@ def __update_job_state_in_db(id: int, state: JobState):
         print(f"An error occured during database process while updating job [id:{id}]")
         raise e
     else:
-        print(f"Update job [id:{id}] state is finished")
+        print(f"Update job [id:{id}] state to {state.value} is finished")
     finally:
         session.close()
 
@@ -109,20 +114,23 @@ def __get_metadata(video: BufferedReader):
 
     command = ["ffprobe", "-print_format", "json", "-show_format", "-show_streams", "pipe:0"]
 
-    print(f"Video metadata extraction: {" ".join(command)}")
+    print(f"Video metadata extraction [{" ".join(command)}] has started")
 
     process = cast(subprocess.CompletedProcess[bytes], __run_process(command, video, capture_output=True))
 
     metadata = json.loads(process.stdout)
 
+    print(f"Video metadata extraction [{" ".join(command)}] has finished")
+
     return metadata
 
 
 def __run_process(command: List[str], video: BufferedReader, *, capture_output: bool = False, saved_files_path: List[str] = []) -> subprocess.CompletedProcess[bytes] | None:
-    if next((file_path for file_path in saved_files_path if not os.path.exists(file_path)), None) is None:
+    if saved_files_path and next((file_path for file_path in saved_files_path if not os.path.exists(file_path)), None) is None:
         return None
 
     try:
+        video.seek(0)
         process = subprocess.run(
             command,
             capture_output=capture_output,
@@ -136,7 +144,7 @@ def __run_process(command: List[str], video: BufferedReader, *, capture_output: 
                 os.remove(saved_file_path)
         print("Process failed")
         print(e.stderr)
-        raise RuntimeError(f"Process excecution failed with command: {" ".join(command)}")
+        raise RuntimeError(f"Process excecution failed with command [{" ".join(command)}]")
     else:
         return process
 
@@ -149,13 +157,15 @@ def __calc_fps(fps_raw: str) -> float:
 def __generate_thumbnail(id: int, video: BufferedReader, duration: float) -> str:
     random_second = randrange(1, ceil(duration) if duration < 59 else 60)
 
-    local_output_file_path = f"{id}/thumbnail.jpg"
+    local_output_file_path = f"{id}\\thumbnail.jpg"
 
-    output_file_path = f"{UPLOAD_FOLDER_PATH}/{local_output_file_path}"
+    output_file_path = f"{UPLOAD_FOLDER_PATH}\\{local_output_file_path}"
 
-    command = ["ffmpeg", "-i", "pipe:0", "-ss", f"00:00:{random_second:02d}.000", "-vframes", "1", "-vf", "scale=-2:360", output_file_path]
+    command = ["ffmpeg", "-y", "-i", "pipe:0", "-ss", f"00:00:{random_second:02d}.000", "-vframes", "1", "-vf", "scale=-2:360", output_file_path]
 
     print(f"Generate thumbnail file: {" ".join(command)}")
+
+    print(os.access(os.path.dirname(output_file_path), os.W_OK))
 
     __run_process(command, video, saved_files_path=[f"{UPLOAD_FOLDER_PATH}/{local_output_file_path}"])
 
@@ -166,9 +176,9 @@ def __generate_thumbnail(id: int, video: BufferedReader, duration: float) -> str
 
 def __generate_preview(id: int, video: BufferedReader) -> str:
 
-    local_output_file_path = f"{id}/thumbnail.jpg"
+    local_output_file_path = f"{id}\\preview.mp4"
 
-    output_file_path = f"{UPLOAD_FOLDER_PATH}/{local_output_file_path}"
+    output_file_path = f"{UPLOAD_FOLDER_PATH}\\{local_output_file_path}"
 
     command = ["ffmpeg", "-y", "-i", "pipe:0", "-map", "0:v:0", "-c:v", "h264", "-map", "0:a:0?", "-c:a", "aac", "-vf", "scale=-2:480", output_file_path]
 
