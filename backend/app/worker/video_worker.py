@@ -8,6 +8,7 @@ from math import ceil
 import os
 import stat
 import shutil
+import time
 from app.folders import UPLOAD_FOLDER_PATH, STATIC_FOLDER_URL
 from app.database.models import Job, VideoStreamMetaData, AudioStreamMetaData, SubtitlesStreamMetaData
 from app.database.session import SessionLocal
@@ -15,6 +16,8 @@ from app.job_state import JobState
 
 
 TIMEOUT = 60
+NUM_OF_TRIES = 3
+RETRY_DELAY = 5
 
 
 app = Celery("video_worker", broker="redis://localhost:6379/0")
@@ -23,24 +26,36 @@ app = Celery("video_worker", broker="redis://localhost:6379/0")
 @app.task
 def process_video(id: int, video_abs_path: str, video_local_path: str):
 
-    # TODO: retry mechanism with maximum number of retries and a backoff mechanism (delaying retries)
-    video = open(video_abs_path, "rb")
     try:
-        # TODO: delete after dockerization (Windows-specific code)
+        # TODO: delete it after dockerization (windows-specific code)
         os.chmod(f"{UPLOAD_FOLDER_PATH}\\{id}", stat.S_IRWXU)
 
-        __update_job_state_in_db(id, JobState.RUNNING)
-
-        duration, video_stream_list, audio_stream_list, subtitles_stream_list = __process_metadata(video)
-
-        thumbnail_local_path = __generate_thumbnail(id, video, duration)
-
-        preview_local_path = __generate_preview(id, video)
-
-        __update_job_in_db(id, duration, thumbnail_local_path, preview_local_path, video_local_path, video_stream_list, audio_stream_list, subtitles_stream_list)
-    except Exception as e:
+        success = False
+        video = None
+        for attempt in range(1, NUM_OF_TRIES + 1):
+            try:
+                print(f"Start of attempt no. {attempt}")
+                video = open(video_abs_path, "rb")
+                __update_job_state_in_db(id, JobState.RUNNING)
+                duration, video_stream_list, audio_stream_list, subtitles_stream_list = __process_metadata(video)
+                thumbnail_local_path = __generate_thumbnail(id, video, duration)
+                preview_local_path = __generate_preview(id, video)
+                __update_job_in_db(id, duration, thumbnail_local_path, preview_local_path, video_local_path, video_stream_list, audio_stream_list, subtitles_stream_list)
+                print(f"Attempt no. {attempt} has successed")
+                success = True
+                break
+            except Exception as e:
+                print(f"The process stopped with error: {e}")
+                print(f"Attempt no. {attempt} has failed")
+                time.sleep(RETRY_DELAY)
+            finally:
+                if video:
+                    video.close()
+                    video = None
+        if not success:
+            raise RuntimeError("All retry attempts failed")
+    except Exception:
         try:
-            video.close()
             folder_path = os.path.join(UPLOAD_FOLDER_PATH, str(id))
             shutil.rmtree(folder_path)
         except FileNotFoundError:
@@ -48,10 +63,7 @@ def process_video(id: int, video_abs_path: str, video_local_path: str):
         except Exception:
             print("Error cleaning up the folder")
         finally:
-            print(f"The process stopped with error: {e}")
             __update_job_state_in_db(id, JobState.FAILED)
-    else:
-        video.close()
 
 
 def __update_job_state_in_db(id: int, state: JobState):
