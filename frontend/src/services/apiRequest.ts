@@ -14,16 +14,14 @@ export type ApiResponse<T = any> = {
 
 export async function apiRequest<T = void>({
   url, 
-  method = "GET", 
+  method = "GET",
   body,
   headers = {},
-  jwt = null
 } : ApiRequestParams) : Promise<ApiResponse<T>> {
 
   const response = await fetch(url, {
     method,
     headers: {
-      Authorization: !jwt ? "" : "Bearer " + jwt,
       ...headers,
     },
     ...(method !== "GET" && body ? {body} : {})

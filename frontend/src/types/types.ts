@@ -4,8 +4,8 @@ type Job = {
     state: "queued" | "running" | "done" | "failed"
 }
 
-export type JobListElement = Job & {
-    thumbnail_url: string
+export type JobListElementDto = Job & {
+    thumbnail_url: string | null
 }
 
 export type Video = Job & {
