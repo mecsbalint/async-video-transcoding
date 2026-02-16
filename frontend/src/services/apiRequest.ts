@@ -27,7 +27,13 @@ export async function apiRequest<T = void>({
     ...(method !== "GET" && body ? {body} : {})
   });
 
-  let responseBody = await response.json().catch(() => null);
+  console.log(url)
+  console.log(response)
+
+  let responseBody = await response.json().catch(() => {
+    console.log("KAKA")
+    return null
+  });
 
   if (response.status >= 400 && response.status <= 599) {
     return {status: response.status, body: null};

@@ -8,7 +8,7 @@ export type JobListElementDto = Job & {
     thumbnail_url: string | null
 }
 
-export type Video = Job & {
+export type VideoData = Job & {
     original_url: string,
     preview_url: string,
     thumbnail_url: string,
@@ -18,7 +18,7 @@ export type Video = Job & {
     subtitles_streams_metadata: SubtitlesStreamMetadata[]
 }
 
-type StreamMetadata = {
+export type StreamMetadata = {
     fps: number,
     codec: string
 }

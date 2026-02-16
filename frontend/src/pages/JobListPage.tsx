@@ -18,6 +18,7 @@ function JobListPage() {
         <div className={"flex items-start"}>
             <table className="table table-zebra bg-base-300 h-auto">
                 <thead className="tracking-wide">
+                    <th></th>
                     <th>Id</th> 
                     <th>State</th> 
                     <th>Thumbnail</th> 
