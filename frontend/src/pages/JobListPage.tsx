@@ -8,15 +8,14 @@ function JobListPage() {
     const isPolling = useRef<boolean>(false);
 
     useEffect(() => {
-        const interval = setInterval(() => {
+        const interval = setInterval(async () => {
             if (isPolling.current) return;
             isPolling.current = true;
             try {
-                getJobList().then(response => {
-                    if (response.status === 200) {
-                        setJobList(response.body as JobListElementDto[]);
-                    }
-                });
+                const response = await getJobList();
+                if (response.status === 200) {
+                    setJobList(response.body as JobListElementDto[]);
+                }
             } finally {
                 isPolling.current = false;
             }
