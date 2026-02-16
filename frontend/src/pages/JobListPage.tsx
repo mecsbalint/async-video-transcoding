@@ -1,18 +1,28 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { getJobList } from "../services/jobService"
 import { JobListElementDto } from "../types/types"
 import JobListElement from "../components/JobListElement"
 
 function JobListPage() {
-    const [jobList, setJobList] = useState<JobListElementDto[]>([])
+    const [jobList, setJobList] = useState<JobListElementDto[]>([]);
+    const isPolling = useRef<boolean>(false);
 
     useEffect(() => {
-        getJobList().then(response => {
-            if (response.status === 200) {
-                setJobList(response.body as JobListElementDto[])
+        const interval = setInterval(() => {
+            if (isPolling.current) return;
+            isPolling.current = true;
+            try {
+                getJobList().then(response => {
+                    if (response.status === 200) {
+                        setJobList(response.body as JobListElementDto[]);
+                    }
+                });
+            } finally {
+                isPolling.current = false;
             }
-        })
-    }, [])
+        }, 2000);
+        return () => clearInterval(interval);
+    }, []);
 
     return (
         <div className={"flex items-start"}>
