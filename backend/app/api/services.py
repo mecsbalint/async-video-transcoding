@@ -10,7 +10,10 @@ from app.worker.video_worker import process_video
 from app.folders import UPLOAD_FOLDER_PATH
 
 
-def upload_video(video: FileStorage) -> JobDto:
+SMALL_FILE_MAX_SIZE = 20000000  # 20 MB
+
+
+def upload_video(video: FileStorage, request_priority: str | None) -> JobDto:
     session = SessionLocal()
     output_file_path = None
 
@@ -26,8 +29,9 @@ def upload_video(video: FileStorage) -> JobDto:
         os.makedirs(f"{UPLOAD_FOLDER_PATH}/{new_job.id}")
         video.save(output_file_path)
         print(f"Original video file saved to: {output_file_path}")
+        priority = "high" if __get_job_priority(output_file_path, request_priority) else "low"
 
-        process_video.delay(new_job.id, output_file_path, local_output_file_path)
+        process_video.apply_async(args=[new_job.id, output_file_path, local_output_file_path], queue=priority)
 
         return JobDto.model_validate(new_job)
     except Exception as e:
@@ -66,3 +70,9 @@ def get_all_jobs() -> List[JobListElementDto] | None:
         return [JobListElementDto.model_validate(job_dict) for job_dict in job_dicts]
     except Exception:
         return None
+
+
+def __get_job_priority(saved_file_path: str, request_priority: str | None) -> bool:
+    if request_priority == "high":
+        return True
+    return os.stat(saved_file_path).st_size < SMALL_FILE_MAX_SIZE
