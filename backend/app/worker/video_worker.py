@@ -20,7 +20,7 @@ NUM_OF_TRIES = 3
 RETRY_DELAY = 5
 
 
-app = Celery("video_worker", broker="redis://localhost:6379/0")
+app = Celery("video_worker", broker="redis://redis:6379/0")
 
 
 @app.task
