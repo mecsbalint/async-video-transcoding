@@ -1,5 +1,5 @@
 import os
-from typing import List
+from typing import List, cast
 from sqlalchemy import select
 from werkzeug.datastructures import FileStorage
 from app.api.dtos import JobDoneDto, JobDto, JobFailedDto, JobListElementDto
@@ -23,10 +23,11 @@ def upload_video(video: FileStorage, request_priority: str | None) -> JobDto:
         session.commit()
         session.refresh(new_job)
 
-        local_output_file_path = f"{new_job.id}/{video.filename}"
+        local_output_file_path = os.path.join(str(new_job.id), cast(str, video.filename))
         print("Save original video ")
-        output_file_path = f"{UPLOAD_FOLDER_PATH}/{local_output_file_path}"
-        os.makedirs(f"{UPLOAD_FOLDER_PATH}/{new_job.id}")
+        output_file_path = os.path.join(UPLOAD_FOLDER_PATH, local_output_file_path)
+        job_folder = os.path.join(UPLOAD_FOLDER_PATH, str(new_job.id))
+        os.makedirs(job_folder)
         video.save(output_file_path)
         print(f"Original video file saved to: {output_file_path}")
         priority = "high" if __get_job_priority(output_file_path, request_priority) else "low"

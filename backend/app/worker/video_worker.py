@@ -168,17 +168,15 @@ def __calc_fps(fps_raw: str) -> float:
 def __generate_thumbnail(id: int, video: BufferedReader, duration: float) -> str:
     random_second = randrange(1, ceil(duration) if duration < 59 else 60)
 
-    local_output_file_path = f"{id}\\thumbnail.jpg"
+    local_output_file_path = os.path.join(str(id), "thumbnail.jpg")
 
-    output_file_path = f"{UPLOAD_FOLDER_PATH}\\{local_output_file_path}"
+    output_file_path = os.path.join(UPLOAD_FOLDER_PATH, local_output_file_path)
 
     command = ["ffmpeg", "-y", "-i", "pipe:0", "-ss", f"00:00:{random_second:02d}.000", "-vframes", "1", "-vf", "scale=-2:360", output_file_path]
 
     print(f"Generate thumbnail file: {" ".join(command)}")
 
-    print(os.access(os.path.dirname(output_file_path), os.W_OK))
-
-    __run_process(command, video, saved_files_path=[f"{UPLOAD_FOLDER_PATH}/{local_output_file_path}"])
+    __run_process(command, video, saved_files_path=[output_file_path])
 
     print(f"Thumbnail file saved to: {output_file_path}")
 
@@ -187,9 +185,9 @@ def __generate_thumbnail(id: int, video: BufferedReader, duration: float) -> str
 
 def __generate_preview(id: int, video: BufferedReader) -> str:
 
-    local_output_file_path = f"{id}\\preview.mp4"
+    local_output_file_path = os.path.join(str(id), "preview.mp4")
 
-    output_file_path = f"{UPLOAD_FOLDER_PATH}\\{local_output_file_path}"
+    output_file_path = os.path.join(UPLOAD_FOLDER_PATH, local_output_file_path)
 
     command = ["ffmpeg", "-y", "-i", "pipe:0", "-map", "0:v:0", "-c:v", "h264", "-map", "0:a:0?", "-c:a", "aac", "-vf", "scale=-2:480", output_file_path]
 
