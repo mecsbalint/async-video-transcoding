@@ -1,5 +1,6 @@
 from flask import Flask, Response, request, jsonify
 from app.api.services import upload_video as upload_video_service, get_job as get_job_service, get_all_jobs as get_all_jobs_service
+from app.env_variables import ALLOWED_EXTENSIONS
 
 
 def init_endpoints(app: Flask):
@@ -44,7 +45,6 @@ def init_endpoints(app: Flask):
 
 
 def __is_allowed_file(filename: str | None) -> bool:
-    from app.api import ALLOWED_EXTENSIONS
     if filename is None:
         return False
     for ext in ALLOWED_EXTENSIONS:

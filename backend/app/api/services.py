@@ -8,9 +8,7 @@ from app.database.models import Job
 from app.job_state import JobState
 from app.worker.video_worker import process_video
 from app.folders import UPLOAD_FOLDER_PATH
-
-
-SMALL_FILE_MAX_SIZE = 20000000  # 20 MB
+from app.env_variables import SMALL_FILE_MAX_SIZE
 
 
 def upload_video(video: FileStorage, request_priority: str | None) -> JobDto:

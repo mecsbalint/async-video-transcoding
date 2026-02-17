@@ -31,6 +31,9 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    environment:
+      - SMALL_FILE_MAX_SIZE=${SMALL_FILE_MAX_SIZE}
+      - ALLOWED_EXTENSIONS=${ALLOWED_EXTENSIONS}
     command: python run_api.py
 
   worker_high:
@@ -42,6 +45,10 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    environment:
+      - SUBPROCESS_TIMEOUT=${SUBPROCESS_TIMEOUT}
+      - NUM_OF_TRIES=${NUM_OF_TRIES}
+      - RETRY_DELAY=${RETRY_DELAY}
     command: celery -A app.worker.video_worker worker --loglevel=INFO -Q high
 
   worker_low:
@@ -53,6 +60,10 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    environment:
+      - SUBPROCESS_TIMEOUT=${SUBPROCESS_TIMEOUT}
+      - NUM_OF_TRIES=${NUM_OF_TRIES}
+      - RETRY_DELAY=${RETRY_DELAY}
     command: celery -A app.worker.video_worker worker --loglevel=INFO -Q high,low
 
   frontend:

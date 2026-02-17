@@ -12,11 +12,7 @@ from app.folders import UPLOAD_FOLDER_PATH, STATIC_FOLDER_URL
 from app.database.models import Job, VideoStreamMetaData, AudioStreamMetaData, SubtitlesStreamMetaData
 from app.database.session import SessionLocal
 from app.job_state import JobState
-
-
-TIMEOUT = 60
-NUM_OF_TRIES = 3
-RETRY_DELAY = 5
+from app.env_variables import NUM_OF_TRIES, SUBPROCESS_TIMEOUT, RETRY_DELAY
 
 
 app = Celery("video_worker", broker="redis://redis:6379/0")
@@ -147,7 +143,7 @@ def __run_process(command: List[str], video: BufferedReader, *, capture_output: 
             capture_output=capture_output,
             input=video.read(),
             check=True,
-            timeout=TIMEOUT
+            timeout=SUBPROCESS_TIMEOUT
         )
     except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
         for saved_file_path in saved_files_path:
