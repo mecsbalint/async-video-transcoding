@@ -1,0 +1,26 @@
+services:
+
+  db:
+    image: 'postgres:18'
+    environment:
+      - POSTGRES_USER=compose-postgres
+      - POSTGRES_PASSWORD=compose-postgres
+      - POSTGRES_DB=bmg
+    volumes:
+      - db-data:/var/lib/postgresql
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U compose-postgres -d bmg" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis-cache:
+    image: 'redis:8.6'
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
+      interval: 1s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  db-data:
