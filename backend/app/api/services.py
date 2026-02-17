@@ -70,6 +70,8 @@ def get_all_jobs() -> List[JobListElementDto] | None:
         return [JobListElementDto.model_validate(job_dict) for job_dict in job_dicts]
     except Exception:
         return None
+    finally:
+        session.close()
 
 
 def __get_job_priority(saved_file_path: str, request_priority: str | None) -> bool:
