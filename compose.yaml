@@ -14,13 +14,21 @@ services:
       timeout: 5s
       retries: 10
 
-  redis-cache:
+  redis:
     image: 'redis:8.6'
     healthcheck:
       test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
       interval: 1s
       timeout: 3s
       retries: 5
+
+  frontend:
+    build: 
+      context: ./frontend
+    # depends_on:
+    #   - backend
+    ports:
+      - ${PORT_NUMBER}:80
 
 volumes:
   db-data:
