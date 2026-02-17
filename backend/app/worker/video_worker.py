@@ -6,7 +6,6 @@ import subprocess
 from random import randrange
 from math import ceil
 import os
-import stat
 import shutil
 import time
 from app.folders import UPLOAD_FOLDER_PATH, STATIC_FOLDER_URL
