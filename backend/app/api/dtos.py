@@ -33,9 +33,9 @@ class JobDto(DtoBaseModel):
 
 class JobDoneDto(JobDto):
     state: JobState = Field(default=JobState.DONE)
-    original_url: str | None
-    preview_url: str | None
-    thumbnail_url: str | None
+    original_url: str
+    preview_url: str
+    thumbnail_url: str
     duration: float | None
     video_streams_metadata: List[VideoStreamMetadataDto]
     audio_streams_metadata: List[AudioStreamMetadataDto]
@@ -45,3 +45,7 @@ class JobDoneDto(JobDto):
 class JobFailedDto(JobDto):
     state: JobState = Field(default=JobState.FAILED)
     error_message: str
+
+
+class JobListElementDto(JobDto):
+    thumbnail_url: str | None

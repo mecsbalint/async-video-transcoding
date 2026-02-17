@@ -1,0 +1,11 @@
+{
+    "compilerOptions": {
+    "composite": true,
+    "module": "ESNext",
+    "moduleResolution": "nodenext",
+    "allowSyntheticDefaultImports": true,
+    "lib": ["ES2022"],
+    "forceConsistentCasingInFileNames": true
+    },
+    "include": ["vite.config.ts"]
+}

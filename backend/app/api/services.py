@@ -1,6 +1,8 @@
 import os
+from typing import List
+from sqlalchemy import select
 from werkzeug.datastructures import FileStorage
-from app.api.dtos import JobDoneDto, JobDto, JobFailedDto
+from app.api.dtos import JobDoneDto, JobDto, JobFailedDto, JobListElementDto
 from app.database.session import SessionLocal
 from app.database.models import Job
 from app.job_state import JobState
@@ -55,3 +57,12 @@ def get_job(id: int) -> JobDto | None:
         return None
     finally:
         session.close()
+
+
+def get_all_jobs() -> List[JobListElementDto] | None:
+    session = SessionLocal()
+    try:
+        job_dicts = session.execute(select(Job.id, Job.state, Job.thumbnail_url)).mappings().all()
+        return [JobListElementDto.model_validate(job_dict) for job_dict in job_dicts]
+    except Exception:
+        return None

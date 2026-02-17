@@ -1,5 +1,5 @@
 from flask import Flask, Response, request, jsonify
-from app.api.services import upload_video as upload_video_service, get_job as get_job_service
+from app.api.services import upload_video as upload_video_service, get_job as get_job_service, get_all_jobs as get_all_jobs_service
 
 
 def __is_allowed_file(filename: str | None) -> bool:
@@ -38,5 +38,14 @@ def init_endpoints(app: Flask):
         id = int(job_id)
         jobDto = get_job_service(id)
         if not jobDto:
+            # TODO: implement error handling
             return Response(status=400)
         return jobDto.model_dump()
+
+    @app.route("/api/jobs", methods=["GET"])
+    def get_all_jobs():
+        job_dtos = get_all_jobs_service()
+        if job_dtos is None:
+            # TODO: implement error handling
+            return Response(status=400)
+        return [dto.model_dump() for dto in job_dtos]
