@@ -27,11 +27,7 @@ export async function apiRequest<T = void>({
     ...(method !== "GET" && body ? {body} : {})
   });
 
-  console.log(url)
-  console.log(response)
-
   let responseBody = await response.json().catch(() => {
-    console.log("KAKA")
     return null
   });
 

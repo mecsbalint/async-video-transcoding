@@ -19,13 +19,13 @@ function UploadPage() {
 
     return (
         <form onSubmit={handleSubmit}>
-            <h2>Upload video</h2>
-            <input type="file" onChange={event => {
+            <h1 className="text-2xl mb-5">Upload video</h1>
+            <input type="file" className="file-input" onChange={event => {
                 if (event.target.files !== null) {
                     setFile(event.target.files[0]);
                 }
                 }} />
-            <button type="submit" disabled={file === null}>
+            <button type="submit" className="btn btn-primary mt-2" disabled={file === null}>
                 Upload video
             </button>
         </form>

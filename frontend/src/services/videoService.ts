@@ -4,7 +4,7 @@ export async function uploadVideo(video: File): Promise<ApiResponse<null>> {
     const formData = new FormData();
     formData.append("video", video);
 
-    const responseObj = await apiRequest<null>({url: "/api/uploads", method: "POST", body: formData, headers: {"content-type": "multipart/form-data"}});
+    const responseObj = await apiRequest<null>({url: "/api/uploads", method: "POST", body: formData});
 
     return responseObj;
 }
