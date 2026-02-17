@@ -27,8 +27,6 @@ app = Celery("video_worker", broker="redis://redis:6379/0")
 def process_video(id: int, video_abs_path: str, video_local_path: str):
 
     try:
-        # TODO: delete it after dockerization (windows-specific code)
-        os.chmod(f"{UPLOAD_FOLDER_PATH}\\{id}", stat.S_IRWXU)
 
         __update_job_state_in_db(id, JobState.RUNNING)
 
