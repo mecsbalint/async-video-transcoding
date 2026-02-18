@@ -1,14 +1,17 @@
-try {
-    Write-Host "Build images with Docker Compose..."
-    docker-compose build
-    
-    Write-Host "Starting app with Docker Compose..."
-    docker-compose up --detach
-}
-catch {
-    Write-Host "The app failed to start"
+Write-Host "Build images with Docker Compose..."
+docker-compose build
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "The Docker Compose failed to build the app"
     exit 1
 }
+    
+Write-Host "Starting app with Docker Compose..."
+docker-compose up --detach
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "The Docker Compose failed to start the app"
+    exit 1
+}
+
 
 $counter = 60
 $success = $false
