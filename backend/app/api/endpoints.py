@@ -5,6 +5,10 @@ from app.env_variables import ALLOWED_EXTENSIONS
 
 def init_endpoints(app: Flask):
 
+    @app.route("/api/health", methods=["GET"])
+    def health_check():
+        return jsonify({"status": "healthy"}), 200
+
     @app.route("/api/uploads", methods=["POST"])
     def upload_video():
         if "video" not in request.files:
