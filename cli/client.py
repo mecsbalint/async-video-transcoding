@@ -4,28 +4,31 @@ from typing import Literal, cast
 import requests
 from dotenv import load_dotenv
 import time
+from pathlib import Path
 
-load_dotenv("..\\.env")
 
+ENV_PATH = Path(__file__).resolve().parent.parent / ".env"
+load_dotenv(ENV_PATH)
 API_PORT_NUMBER = os.getenv("API_PORT_NUMBER")
 
 
 def run():
     arg_l = sys.argv
 
-    if arg_l[1] not in ["single_upload", "batch_upload"]:
+    if arg_l[1] in ["single_upload", "batch_upload"]:
         if len(arg_l) < 3:
             raise Exception("Illegal arguments. The first option has to have an argument.")
 
         file_paths = __get_valid_file_paths(arg_l[1], arg_l[2])
 
-        is_wait, priority = __get_upload_options(arg_l[4:])
+        is_wait, priority = __get_upload_options(arg_l[3:])
 
         processed_jobs = __send_uploads_requests(file_paths, priority)
 
         if len(processed_jobs) == 0:
             print(f"There were no valid files set as file or folder in the arg [{arg_l[2]}]")
         elif is_wait:
+            __print_jobs(processed_jobs)
             while next(iter([job[0] for job in processed_jobs if job[1] in ["queued", "running"]]), None):
                 time.sleep(10)
                 __send_check_requests(processed_jobs)
@@ -36,7 +39,7 @@ def run():
         print("Processing finished")
 
     else:
-        raise Exception("Illegal arguments. The first option of the command must be 'single_upload', 'batch_upload' or 'check_job")
+        raise Exception("Illegal arguments. The first option of the command must be either 'single_upload' or 'batch_upload'")
 
 
 def __get_valid_file_paths(run_type: str, rel_path: str) -> list[str]:
@@ -66,13 +69,15 @@ def __get_valid_file_paths(run_type: str, rel_path: str) -> list[str]:
 def __get_upload_options(sub_arg: list[str]) -> tuple[bool, Literal["high", "low"]]:
     priority = "low"
     is_wait = False
-    for arg in sub_arg:
+    for i, arg in enumerate(sub_arg):
         if arg == "--wait":
             is_wait = True
         if arg == "--priority":
-            value = sub_arg.pop()
+            if i + 1 >= len(sub_arg):
+                raise Exception("Illegal argument. The --priority option must have a value.")
+            value = sub_arg[i + 1]
             if value not in ["high", "low"]:
-                raise Exception("Illegal argument. The --priority option must be either high or low")
+                raise Exception("Illegal argument. The --priority option must be either high or low.")
             else:
                 priority = cast(Literal["high", "low"], value)
     return is_wait, priority
@@ -88,7 +93,7 @@ def __send_uploads_requests(file_paths: list[str], priority: Literal["high", "lo
             if response.status_code == 201:
                 response_body = cast(dict[str, str], response.json())
                 jobs.append([response_body["id"], response_body["state"], path])
-        print("Finished process file {path}")
+        print(f"Finished process file {path}")
 
     return jobs
 
