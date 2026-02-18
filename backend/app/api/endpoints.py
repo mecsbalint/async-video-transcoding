@@ -1,4 +1,4 @@
-from flask import Flask, Response, request, jsonify
+from flask import Flask, request, jsonify
 from app.api.services import upload_video as upload_video_service, get_job as get_job_service, get_all_jobs as get_all_jobs_service, get_jobs as get_jobs_service
 from app.env_variables import ALLOWED_EXTENSIONS
 
