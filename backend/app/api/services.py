@@ -73,6 +73,17 @@ def get_all_jobs() -> List[JobListElementDto] | None:
         session.close()
 
 
+def get_jobs(ids: List[int]) -> List[JobDto] | None:
+    session = SessionLocal()
+    try:
+        job_dicts = session.execute(select(Job.id, Job.state).where(Job.id.in_(ids))).mappings().all()
+        return [JobDto.model_validate(job_dict) for job_dict in job_dicts]
+    except Exception:
+        return None
+    finally:
+        session.close()
+
+
 def __get_job_priority(saved_file_path: str, request_priority: str | None) -> bool:
     if request_priority == "high":
         return True

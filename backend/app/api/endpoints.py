@@ -1,5 +1,5 @@
 from flask import Flask, Response, request, jsonify
-from app.api.services import upload_video as upload_video_service, get_job as get_job_service, get_all_jobs as get_all_jobs_service
+from app.api.services import upload_video as upload_video_service, get_job as get_job_service, get_all_jobs as get_all_jobs_service, get_jobs as get_jobs_service
 from app.env_variables import ALLOWED_EXTENSIONS
 
 
@@ -40,8 +40,15 @@ def init_endpoints(app: Flask):
         return jobDto.model_dump()
 
     @app.route("/api/jobs", methods=["GET"])
-    def get_all_jobs():
-        job_dtos = get_all_jobs_service()
+    def get_jobs():
+        ids = request.args.get("ids", None)
+        if ids is None:
+            job_dtos = get_all_jobs_service()
+        else:
+            try:
+                job_dtos = get_jobs_service([int(id) for id in ids.split(",")])
+            except Exception:
+                return Response(status=400)
         if job_dtos is None:
             # TODO: implement error handling
             return Response(status=400)

@@ -29,7 +29,7 @@ def run():
             print(f"There were no valid files set as file or folder in the arg [{arg_l[2]}]")
         elif is_wait:
             __print_jobs(processed_jobs)
-            while next(iter([job[0] for job in processed_jobs if job[1] in ["queued", "running"]]), None):
+            while next(iter([job[0] for job in processed_jobs if job[1] in ["queued", "running"]]), None) is None:
                 time.sleep(10)
                 __send_check_requests(processed_jobs)
                 __print_jobs(processed_jobs)
@@ -93,7 +93,7 @@ def __send_uploads_requests(file_paths: list[str], priority: Literal["high", "lo
             response = requests.post(f"http://localhost:{API_PORT_NUMBER}/api/uploads?priority={priority}", files={"video": file})
             if response.status_code == 201:
                 response_body = cast(dict[str, str], response.json())
-                jobs.append([response_body["id"], response_body["state"], path])
+                jobs.append([str(response_body["id"]), response_body["state"], path])
             else:
                 print("Processing file was unsuccessful.")
         print("Finished process file.")
@@ -102,12 +102,14 @@ def __send_uploads_requests(file_paths: list[str], priority: Literal["high", "lo
 
 
 def __send_check_requests(processed_jobs: list[list[str]]):
-    for job in processed_jobs:
-        if job[1] in ["queued", "rubbing"]:
-            response = requests.get(f"http://localhost:{API_PORT_NUMBER}/api/jobs/{job[0]}")
-            if response.status_code == 200:
-                response_body = cast(dict[str, str], response.json())
-                job[1] = response_body["state"]
+    response = requests.get(f"http://localhost:{API_PORT_NUMBER}/api/jobs?ids={",".join([str(job[0]) for job in processed_jobs if job[1] in ["queued", "running"]])}")
+    if response.status_code == 200:
+        response_body = cast(list[dict[str, str]], response.json())
+        id_state_dict = {job["id"]: job["state"] for job in response_body}
+        for job in processed_jobs:
+            job_new_state = id_state_dict.get(job[0])
+            if job_new_state is not None:
+                job[1] = job_new_state
 
 
 def __print_jobs(processed_jobs: list[list[str]]):
