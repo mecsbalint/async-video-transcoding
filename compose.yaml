@@ -35,6 +35,8 @@ services:
       - SMALL_FILE_MAX_SIZE=${SMALL_FILE_MAX_SIZE}
       - ALLOWED_EXTENSIONS=${ALLOWED_EXTENSIONS}
     command: python run_api.py
+    ports:
+      - ${API_PORT_NUMBER}:8000
 
   worker_high:
     image: backend
@@ -72,11 +74,7 @@ services:
     depends_on:
       - api
     ports:
-      - ${PORT_NUMBER}:80
-  
-  cli:
-    build:
-      context: ./cli
+      - ${FRONTEND_PORT_NUMBER}:80
 
 volumes:
   uploads:
