@@ -4,12 +4,13 @@ import { useNavigate } from "react-router-dom";
 
 function UploadPage() {
     const [file, setFile] = useState<File | null>(null);
+    const [priorityHigh, setPriorityHigh] = useState<boolean>(false);
     const navigate = useNavigate();
 
     async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
 
-        uploadVideo(file as File).then(response => {
+        uploadVideo(file as File, priorityHigh).then(response => {
             if (response.status === 201) {
                 navigate("/joblist");
             }
@@ -25,9 +26,15 @@ function UploadPage() {
                     setFile(event.target.files[0]);
                 }
                 }} />
-            <button type="submit" className="btn btn-primary mt-2" disabled={file === null}>
-                Upload video
-            </button>
+            <div>
+                <span className="pr-1">High priority</span>
+                <input type="checkbox" onChange={event => setPriorityHigh(event.target.checked)} />
+            </div>
+            <div>
+                <button type="submit" className="btn btn-primary mt-2" disabled={file === null}>
+                    Upload video
+                </button>
+            </div>
         </form>
     )
 }

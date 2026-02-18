@@ -6,29 +6,22 @@ import subprocess
 from random import randrange
 from math import ceil
 import os
-import stat
 import shutil
 import time
 from app.folders import UPLOAD_FOLDER_PATH, STATIC_FOLDER_URL
 from app.database.models import Job, VideoStreamMetaData, AudioStreamMetaData, SubtitlesStreamMetaData
 from app.database.session import SessionLocal
 from app.job_state import JobState
+from app.env_variables import NUM_OF_TRIES, SUBPROCESS_TIMEOUT, RETRY_DELAY
 
 
-TIMEOUT = 60
-NUM_OF_TRIES = 3
-RETRY_DELAY = 5
-
-
-app = Celery("video_worker", broker="redis://localhost:6379/0")
+app = Celery("video_worker", broker="redis://redis:6379/0")
 
 
 @app.task
 def process_video(id: int, video_abs_path: str, video_local_path: str):
 
     try:
-        # TODO: delete it after dockerization (windows-specific code)
-        os.chmod(f"{UPLOAD_FOLDER_PATH}\\{id}", stat.S_IRWXU)
 
         __update_job_state_in_db(id, JobState.RUNNING)
 
@@ -150,7 +143,7 @@ def __run_process(command: List[str], video: BufferedReader, *, capture_output: 
             capture_output=capture_output,
             input=video.read(),
             check=True,
-            timeout=TIMEOUT
+            timeout=SUBPROCESS_TIMEOUT
         )
     except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
         for saved_file_path in saved_files_path:
@@ -171,17 +164,15 @@ def __calc_fps(fps_raw: str) -> float:
 def __generate_thumbnail(id: int, video: BufferedReader, duration: float) -> str:
     random_second = randrange(1, ceil(duration) if duration < 59 else 60)
 
-    local_output_file_path = f"{id}\\thumbnail.jpg"
+    local_output_file_path = os.path.join(str(id), "thumbnail.jpg")
 
-    output_file_path = f"{UPLOAD_FOLDER_PATH}\\{local_output_file_path}"
+    output_file_path = os.path.join(UPLOAD_FOLDER_PATH, local_output_file_path)
 
     command = ["ffmpeg", "-y", "-i", "pipe:0", "-ss", f"00:00:{random_second:02d}.000", "-vframes", "1", "-vf", "scale=-2:360", output_file_path]
 
     print(f"Generate thumbnail file: {" ".join(command)}")
 
-    print(os.access(os.path.dirname(output_file_path), os.W_OK))
-
-    __run_process(command, video, saved_files_path=[f"{UPLOAD_FOLDER_PATH}/{local_output_file_path}"])
+    __run_process(command, video, saved_files_path=[output_file_path])
 
     print(f"Thumbnail file saved to: {output_file_path}")
 
@@ -190,9 +181,9 @@ def __generate_thumbnail(id: int, video: BufferedReader, duration: float) -> str
 
 def __generate_preview(id: int, video: BufferedReader) -> str:
 
-    local_output_file_path = f"{id}\\preview.mp4"
+    local_output_file_path = os.path.join(str(id), "preview.mp4")
 
-    output_file_path = f"{UPLOAD_FOLDER_PATH}\\{local_output_file_path}"
+    output_file_path = os.path.join(UPLOAD_FOLDER_PATH, local_output_file_path)
 
     command = ["ffmpeg", "-y", "-i", "pipe:0", "-map", "0:v:0", "-c:v", "h264", "-map", "0:a:0?", "-c:a", "aac", "-vf", "scale=-2:480", output_file_path]
 

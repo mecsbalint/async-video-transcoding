@@ -1,5 +1,5 @@
 import os
-from typing import List
+from typing import List, cast
 from sqlalchemy import select
 from werkzeug.datastructures import FileStorage
 from app.api.dtos import JobDoneDto, JobDto, JobFailedDto, JobListElementDto
@@ -8,9 +8,10 @@ from app.database.models import Job
 from app.job_state import JobState
 from app.worker.video_worker import process_video
 from app.folders import UPLOAD_FOLDER_PATH
+from app.env_variables import SMALL_FILE_MAX_SIZE
 
 
-def upload_video(video: FileStorage) -> JobDto:
+def upload_video(video: FileStorage, request_priority: str | None) -> JobDto:
     session = SessionLocal()
     output_file_path = None
 
@@ -20,14 +21,16 @@ def upload_video(video: FileStorage) -> JobDto:
         session.commit()
         session.refresh(new_job)
 
-        local_output_file_path = f"{new_job.id}/{video.filename}"
+        local_output_file_path = os.path.join(str(new_job.id), cast(str, video.filename))
         print("Save original video ")
-        output_file_path = f"{UPLOAD_FOLDER_PATH}/{local_output_file_path}"
-        os.makedirs(f"{UPLOAD_FOLDER_PATH}/{new_job.id}")
+        output_file_path = os.path.join(UPLOAD_FOLDER_PATH, local_output_file_path)
+        job_folder = os.path.join(UPLOAD_FOLDER_PATH, str(new_job.id))
+        os.makedirs(job_folder)
         video.save(output_file_path)
         print(f"Original video file saved to: {output_file_path}")
+        priority = "high" if __get_job_priority(output_file_path, request_priority) else "low"
 
-        process_video.delay(new_job.id, output_file_path, local_output_file_path)
+        process_video.apply_async(args=[new_job.id, output_file_path, local_output_file_path], queue=priority)
 
         return JobDto.model_validate(new_job)
     except Exception as e:
@@ -66,3 +69,11 @@ def get_all_jobs() -> List[JobListElementDto] | None:
         return [JobListElementDto.model_validate(job_dict) for job_dict in job_dicts]
     except Exception:
         return None
+    finally:
+        session.close()
+
+
+def __get_job_priority(saved_file_path: str, request_priority: str | None) -> bool:
+    if request_priority == "high":
+        return True
+    return os.stat(saved_file_path).st_size < SMALL_FILE_MAX_SIZE

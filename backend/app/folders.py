@@ -1,5 +1,4 @@
-import os
 
-STATIC_FOLDER_URL = "/api/uploads"
+STATIC_FOLDER_URL = "/api/static/uploads"
 
-UPLOAD_FOLDER_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "uploads"))
+UPLOAD_FOLDER_PATH = "/uploads"
