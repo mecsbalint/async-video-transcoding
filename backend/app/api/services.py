@@ -56,7 +56,6 @@ def get_job(id: int) -> JobDto | None:
             case _:
                 return JobDto.model_validate(job)
     except Exception:
-        # TODO: implement error handling
         return None
     finally:
         session.close()
