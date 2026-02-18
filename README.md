@@ -43,8 +43,8 @@ The Async Video Transcoding App is a Homework project for [NAVA](https://nava.hu
 
 ### Download app
 
-* You can download the application here: [BMG GitHub page](https://github.com/mecsbalint/boci-minesweeper-game). Click on the Code button and choose the Download ZIP option. After downloading unzip it.
-* Or alternatively clone the repository: ```git clone https://github.com/mecsbalint/boci-minesweeper-game```
+* You can download the application here: [Async Video Transcoding GitHub page](https://github.com/mecsbalint/async-video-transcoding). Click on the Code button and choose the Download ZIP option. After downloading unzip it.
+* Or alternatively clone the repository: ```git clone https://github.com/mecsbalint/async-video-transcoding.git```
 
 ### Set Up and Run
 
