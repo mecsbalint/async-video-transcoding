@@ -73,6 +73,10 @@ services:
       - api
     ports:
       - ${PORT_NUMBER}:80
+  
+  cli:
+    build:
+      context: ./cli
 
 volumes:
   uploads:

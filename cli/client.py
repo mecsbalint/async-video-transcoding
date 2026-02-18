@@ -1,10 +1,16 @@
 import sys
 import os
+from typing import cast
+import requests
 
 
 def run():
     arg_l = sys.argv
     file_paths = __get_valid_file_paths(arg_l[1], arg_l[2])
+
+    processed_jobs = __send_requests(file_paths)
+
+    print(processed_jobs)
 
 
 def __get_valid_file_paths(run_type: str, rel_path: str) -> list[str]:
@@ -31,6 +37,21 @@ def __get_valid_file_paths(run_type: str, rel_path: str) -> list[str]:
             raise Exception("Illegal argument. The 'batch_upload' command must set a folder as argument and not a file")
 
     return file_paths
+
+
+def __send_requests(file_paths: list[str]) -> list[tuple[str, str, str]]:
+    jobs: list[tuple[str, str, str]] = []
+
+    for path in file_paths:
+        print(f"Start process file {path}")
+        with open(path, "rb") as file:
+            response = requests.post("http://api:8000/api/uploads", files={"video": file})
+            if response.status_code == 201:
+                response_body = cast(dict[str, str], response.json())
+                jobs.append((response_body["id"], response_body["state"], path))
+        print("Finished process file {path}")
+
+    return jobs
 
 
 if __name__ == "__main__":
