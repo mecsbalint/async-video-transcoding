@@ -57,9 +57,10 @@ def __get_valid_file_paths(run_type: str, rel_path: str) -> list[str]:
             raise Exception("Illegal argument. The 'single_upload' command must set a file as argument and not a folder")
     else:
         if not os.path.isfile(abs_path):
-            for file in os.listdir(abs_path):
-                if os.path.isfile(file):
-                    file_paths.append(file)
+            for file_name in os.listdir(abs_path):
+                file_path = os.path.join(abs_path, file_name)
+                if os.path.isfile(file_path):
+                    file_paths.append(file_path)
         else:
             raise Exception("Illegal argument. The 'batch_upload' command must set a folder as argument and not a file")
 
@@ -93,7 +94,9 @@ def __send_uploads_requests(file_paths: list[str], priority: Literal["high", "lo
             if response.status_code == 201:
                 response_body = cast(dict[str, str], response.json())
                 jobs.append([response_body["id"], response_body["state"], path])
-        print(f"Finished process file {path}")
+            else:
+                print("Processing file was unsuccessful.")
+        print("Finished process file.")
 
     return jobs
 
