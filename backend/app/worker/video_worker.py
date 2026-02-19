@@ -105,12 +105,13 @@ def __process_metadata(video: BufferedReader) -> tuple[float, List[VideoStreamMe
                 ))
             case "audio":
                 audio_stream_list.append(AudioStreamMetaData(
-                    fps=__calc_fps(stream.get("avg_frame_rate", "n/a")),
-                    codec=stream.get("codec_name", "n/a")
+                    language=__get_language(stream.get("tags", {})),
+                    codec=stream.get("codec_name", "n/a"),
+                    sample_rate=stream.get("sample_rate", "n/a")
                 ))
             case "subtitle":
                 subtitles_stream_list.append(SubtitlesStreamMetaData(
-                    fps=__calc_fps(stream.get("avg_frame_rate", "n/a")),
+                    language=__get_language(stream.get("tags", {})),
                     codec=stream.get("codec_name", "n/a")
                 ))
 
@@ -119,7 +120,7 @@ def __process_metadata(video: BufferedReader) -> tuple[float, List[VideoStreamMe
 
 def __get_metadata(video: BufferedReader):
 
-    command = ["ffprobe", "-print_format", "json", "-show_entries", "format=duration:stream=codec_type,codec_name,width,height,avg_frame_rate", "pipe:0"]
+    command = ["ffprobe", "-print_format", "json", "-show_entries", "format=duration:stream=codec_type,codec_name,width,height,avg_frame_rate,sample_rate:stream_tags=language", "pipe:0"]
 
     print(f"Video metadata extraction [{" ".join(command)}] has started")
 
@@ -162,6 +163,10 @@ def __calc_fps(fps_raw: str) -> float:
         return int(dividend) / int(divisor)
     except Exception:
         return -1.0
+
+
+def __get_language(stream_tags: dict[str, str]) -> str:
+    return stream_tags.get("language", "n/a")
 
 
 def __generate_thumbnail(id: int, video: BufferedReader, duration: float) -> str:

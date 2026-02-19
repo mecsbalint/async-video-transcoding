@@ -17,13 +17,14 @@ class VideoStreamMetadataDto(DtoBaseModel):
 
 
 class AudioStreamMetadataDto(DtoBaseModel):
-    fps: int | None
     codec: str | None
+    language: str | None
+    sample_rate: str | None
 
 
 class SubtitlesStreamMetadataDto(DtoBaseModel):
-    fps: int | None
     codec: str | None
+    language: str | None
 
 
 class JobDto(DtoBaseModel):
