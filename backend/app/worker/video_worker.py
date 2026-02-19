@@ -94,7 +94,7 @@ def __process_metadata(video: BufferedReader) -> tuple[float, List[VideoStreamMe
     subtitles_stream_list: List[SubtitlesStreamMetaData] = []
 
     for stream in streams:
-        type: Literal["video", "audio", "subtitles"] = stream["codec_type"]
+        type: Literal["video", "audio", "subtitle"] = stream["codec_type"]
         match type:
             case "video":
                 video_stream_list.append(VideoStreamMetaData(
@@ -108,7 +108,7 @@ def __process_metadata(video: BufferedReader) -> tuple[float, List[VideoStreamMe
                     fps=__calc_fps(stream.get("avg_frame_rate", "n/a")),
                     codec=stream.get("codec_name", "n/a")
                 ))
-            case "subtitles":
+            case "subtitle":
                 subtitles_stream_list.append(SubtitlesStreamMetaData(
                     fps=__calc_fps(stream.get("avg_frame_rate", "n/a")),
                     codec=stream.get("codec_name", "n/a")
