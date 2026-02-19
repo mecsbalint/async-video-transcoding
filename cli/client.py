@@ -11,7 +11,7 @@ ENV_PATH = Path(__file__).resolve().parent.parent / ".env"
 load_dotenv(ENV_PATH)
 API_PORT_NUMBER = os.getenv("API_PORT_NUMBER")
 
-POLLING_DELAY_TIME = 10  # in seconds
+POLLING_DELAY_TIME = 5  # in seconds
 
 
 def run():
@@ -109,8 +109,6 @@ def __send_check_requests(processed_jobs: list[list[str]]):
         response_body = cast(list[dict[str, str | int]], response.json())
         id_state_dict = {job["id"]: job["state"] for job in response_body}
         for job in processed_jobs:
-            print("job[0]: ", job[0])
-            print("job[0]: ", id_state_dict.keys())
             job_new_state = id_state_dict.get(int(job[0]))
             if job_new_state is not None:
                 job[1] = cast(str, job_new_state)
