@@ -11,6 +11,8 @@ ENV_PATH = Path(__file__).resolve().parent.parent / ".env"
 load_dotenv(ENV_PATH)
 API_PORT_NUMBER = os.getenv("API_PORT_NUMBER")
 
+POLLING_DELAY_TIME = 10  # in seconds
+
 
 def run():
     arg_l = sys.argv
@@ -29,8 +31,8 @@ def run():
             print(f"There were no valid files set as file or folder in the arg [{arg_l[2]}]")
         elif is_wait:
             __print_jobs(processed_jobs)
-            while next(iter([job[0] for job in processed_jobs if job[1] in ["queued", "running"]]), None) is None:
-                time.sleep(10)
+            while next(iter([job[0] for job in processed_jobs if job[1] in ["queued", "running"]]), None) is not None:
+                time.sleep(POLLING_DELAY_TIME)
                 __send_check_requests(processed_jobs)
                 __print_jobs(processed_jobs)
         else:
@@ -104,12 +106,14 @@ def __send_uploads_requests(file_paths: list[str], priority: Literal["high", "lo
 def __send_check_requests(processed_jobs: list[list[str]]):
     response = requests.get(f"http://localhost:{API_PORT_NUMBER}/api/jobs?ids={",".join([str(job[0]) for job in processed_jobs if job[1] in ["queued", "running"]])}")
     if response.status_code == 200:
-        response_body = cast(list[dict[str, str]], response.json())
+        response_body = cast(list[dict[str, str | int]], response.json())
         id_state_dict = {job["id"]: job["state"] for job in response_body}
         for job in processed_jobs:
-            job_new_state = id_state_dict.get(job[0])
+            print("job[0]: ", job[0])
+            print("job[0]: ", id_state_dict.keys())
+            job_new_state = id_state_dict.get(int(job[0]))
             if job_new_state is not None:
-                job[1] = job_new_state
+                job[1] = cast(str, job_new_state)
 
 
 def __print_jobs(processed_jobs: list[list[str]]):
