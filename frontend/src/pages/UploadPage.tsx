@@ -37,7 +37,7 @@ function UploadPage() {
                 <input type="checkbox" onChange={event => setPriorityHigh(event.target.checked)} />
             </div>
             <div>
-                <button type="submit" className="btn btn-primary mt-2" disabled={file === null || errorMsg !== null}>
+                <button type="submit" className="btn btn-primary mt-2" disabled={!file || errorMsg !== null}>
                     Upload video
                 </button>
             </div>
