@@ -6,10 +6,12 @@ function UploadPage() {
     const [file, setFile] = useState<File | null>(null);
     const [priorityHigh, setPriorityHigh] = useState<boolean>(false);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
+    const [requestLock, setRequestLock] = useState<boolean>(false);
     const navigate = useNavigate();
 
     async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
+        setRequestLock(true);
 
         uploadVideo(file as File, priorityHigh).then(response => {
             if (response.status === 201) {
@@ -20,7 +22,9 @@ function UploadPage() {
                 setErrorMsg(`Error: Something went wrong during the process`);
             }
             setFile(null);
+            setRequestLock(false);
         });
+
     }
 
     return (
@@ -37,7 +41,7 @@ function UploadPage() {
                 <input type="checkbox" onChange={event => setPriorityHigh(event.target.checked)} />
             </div>
             <div>
-                <button type="submit" className="btn btn-primary mt-2" disabled={!file || errorMsg !== null}>
+                <button type="submit" className="btn btn-primary mt-2" disabled={!file || errorMsg !== null || requestLock}>
                     Upload video
                 </button>
             </div>
