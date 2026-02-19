@@ -56,7 +56,6 @@ def get_job(id: int) -> JobDto | None:
             case _:
                 return JobDto.model_validate(job)
     except Exception:
-        # TODO: implement error handling
         return None
     finally:
         session.close()
@@ -67,6 +66,17 @@ def get_all_jobs() -> List[JobListElementDto] | None:
     try:
         job_dicts = session.execute(select(Job.id, Job.state, Job.thumbnail_url)).mappings().all()
         return [JobListElementDto.model_validate(job_dict) for job_dict in job_dicts]
+    except Exception:
+        return None
+    finally:
+        session.close()
+
+
+def get_jobs(ids: List[int]) -> List[JobDto] | None:
+    session = SessionLocal()
+    try:
+        job_dicts = session.execute(select(Job.id, Job.state).where(Job.id.in_(ids))).mappings().all()
+        return [JobDto.model_validate(job_dict) for job_dict in job_dicts]
     except Exception:
         return None
     finally:

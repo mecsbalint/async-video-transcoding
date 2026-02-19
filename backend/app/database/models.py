@@ -36,8 +36,9 @@ class AudioStreamMetaData(Base):
     __tablename__ = "audio_stream_metadata"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    fps: Mapped[float] = mapped_column()
     codec: Mapped[str] = mapped_column()
+    language: Mapped[str] = mapped_column()
+    sample_rate: Mapped[str] = mapped_column()
     job_id: Mapped[int] = mapped_column(ForeignKey("job.id"))
     job: Mapped["Job"] = relationship(back_populates="audio_streams_metadata")
 
@@ -46,7 +47,7 @@ class SubtitlesStreamMetaData(Base):
     __tablename__ = "subtitles_stream_metadata"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    fps: Mapped[float] = mapped_column()
+    language: Mapped[str] = mapped_column()
     codec: Mapped[str] = mapped_column()
     job_id: Mapped[int] = mapped_column(ForeignKey("job.id"))
     job: Mapped["Job"] = relationship(back_populates="subtitles_streams_metadata")

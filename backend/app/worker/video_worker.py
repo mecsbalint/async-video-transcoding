@@ -1,5 +1,5 @@
 from io import BufferedReader
-from typing import List, Literal, cast
+from typing import Any, List, Literal, cast
 from celery import Celery
 import json
 import subprocess
@@ -87,31 +87,32 @@ def __process_metadata(video: BufferedReader) -> tuple[float, List[VideoStreamMe
 
     duration = float(metadata["format"]["duration"])
 
-    streams = metadata["streams"]
+    streams: list[dict[str, Any]] = metadata["streams"]
 
     video_stream_list: List[VideoStreamMetaData] = []
     audio_stream_list: List[AudioStreamMetaData] = []
     subtitles_stream_list: List[SubtitlesStreamMetaData] = []
 
     for stream in streams:
-        type: Literal["video", "audio", "subtitles"] = stream["codec_type"]
+        type: Literal["video", "audio", "subtitle"] = stream["codec_type"]
         match type:
             case "video":
                 video_stream_list.append(VideoStreamMetaData(
-                    fps=__calc_fps(stream["avg_frame_rate"]),
-                    codec=stream["codec_name"],
-                    width=stream["width"],
-                    height=stream["height"]
+                    fps=__calc_fps(stream.get("avg_frame_rate", "n/a")),
+                    codec=stream.get("codec_name", "n/a"),
+                    width=stream.get("width", -1),
+                    height=stream.get("height", -1)
                 ))
             case "audio":
                 audio_stream_list.append(AudioStreamMetaData(
-                    fps=__calc_fps(stream["avg_frame_rate"]),
-                    codec=stream["codec_name"]
+                    language=__get_language(stream.get("tags", {})),
+                    codec=stream.get("codec_name", "n/a"),
+                    sample_rate=stream.get("sample_rate", "n/a")
                 ))
-            case "subtitles":
+            case "subtitle":
                 subtitles_stream_list.append(SubtitlesStreamMetaData(
-                    fps=__calc_fps(stream["avg_frame_rate"]),
-                    codec=stream["codec_name"]
+                    language=__get_language(stream.get("tags", {})),
+                    codec=stream.get("codec_name", "n/a")
                 ))
 
     return duration, video_stream_list, audio_stream_list, subtitles_stream_list
@@ -119,7 +120,7 @@ def __process_metadata(video: BufferedReader) -> tuple[float, List[VideoStreamMe
 
 def __get_metadata(video: BufferedReader):
 
-    command = ["ffprobe", "-print_format", "json", "-show_format", "-show_streams", "pipe:0"]
+    command = ["ffprobe", "-print_format", "json", "-show_entries", "format=duration:stream=codec_type,codec_name,width,height,avg_frame_rate,sample_rate:stream_tags=language", "pipe:0"]
 
     print(f"Video metadata extraction [{" ".join(command)}] has started")
 
@@ -157,8 +158,15 @@ def __run_process(command: List[str], video: BufferedReader, *, capture_output: 
 
 
 def __calc_fps(fps_raw: str) -> float:
-    dividend, divisor = fps_raw.split("/")
-    return int(dividend) / int(divisor)
+    try:
+        dividend, divisor = fps_raw.split("/")
+        return int(dividend) / int(divisor)
+    except Exception:
+        return -1.0
+
+
+def __get_language(stream_tags: dict[str, str]) -> str:
+    return stream_tags.get("language", "n/a")
 
 
 def __generate_thumbnail(id: int, video: BufferedReader, duration: float) -> str:

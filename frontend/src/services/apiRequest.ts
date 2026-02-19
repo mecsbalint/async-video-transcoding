@@ -30,9 +30,5 @@ export async function apiRequest<T = void>({
     return null
   });
 
-  if (response.status >= 400 && response.status <= 599) {
-    return {status: response.status, body: null};
-  }
-
   return {status: response.status, body: responseBody as T};
 }

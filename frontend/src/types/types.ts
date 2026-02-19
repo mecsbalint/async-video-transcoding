@@ -19,15 +19,20 @@ export type VideoData = Job & {
 }
 
 export type StreamMetadata = {
-    fps: number,
     codec: string
 }
 
 type VideoStreamMetadata = StreamMetadata & {
+    fps: number,
     width: number,
     height: number
 }
 
-type AudioStreamMetadata = StreamMetadata & {}
+type AudioStreamMetadata = StreamMetadata & {
+    sample_rate: string
+    language: string
+}
 
-type SubtitlesStreamMetadata = StreamMetadata & {}
+type SubtitlesStreamMetadata = StreamMetadata & {
+    language: string
+}

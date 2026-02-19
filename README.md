@@ -9,7 +9,7 @@ The Async Video Transcoding App is a Homework project for [NAVA](https://nava.hu
 
 * **Python API:** A Flask-based API for video uploading and state querying.
 * **Video Processing Pipeline:** A pipeline for video processing built with Celery library and using ffmpeg and ffprobe for video processing and metadata extraction.
-* **Priority Queue:** There are tow queues the workers are subscribed to and the jobs are allocated based on the request's priority state and the to be processed file's size
+* **Priority Queue:** There are two queues the workers are subscribed to and the jobs are allocated based on the request's priority state and the to be processed file's size
 * **Frontend:** One way to interact with the API is through a minimal yet tasteful React frontend which list the jobs and show the processed videos' thumbnail images and previews
 * **CLI client:** A Python client to interact with the API
 * **Powershell Demo Script:** A demo script to show the app starts up
@@ -30,8 +30,6 @@ The Async Video Transcoding App is a Homework project for [NAVA](https://nava.hu
 * [![React][React-ico]][React-url]
 
 
-
-
 ## Getting Started
 
 ### Prerequisites
@@ -43,8 +41,8 @@ The Async Video Transcoding App is a Homework project for [NAVA](https://nava.hu
 
 ### Download app
 
-* You can download the application here: [BMG GitHub page](https://github.com/mecsbalint/boci-minesweeper-game). Click on the Code button and choose the Download ZIP option. After downloading unzip it.
-* Or alternatively clone the repository: ```git clone https://github.com/mecsbalint/boci-minesweeper-game```
+* You can download the application here: [Async Video Transcoding GitHub page](https://github.com/mecsbalint/async-video-transcoding). Click on the Code button and choose the Download ZIP option. After downloading unzip it.
+* Or alternatively clone the repository: ```git clone https://github.com/mecsbalint/async-video-transcoding.git```
 
 ### Set Up and Run
 
