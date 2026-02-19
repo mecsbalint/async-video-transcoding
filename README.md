@@ -30,8 +30,6 @@ The Async Video Transcoding App is a Homework project for [NAVA](https://nava.hu
 * [![React][React-ico]][React-url]
 
 
-
-
 ## Getting Started
 
 ### Prerequisites
